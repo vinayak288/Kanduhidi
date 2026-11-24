@@ -1,0 +1,2665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KANDUHIDI — Solo &amp; Multiplayer Guessing Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            brand: {
+              bg: '#0b1023',
+              card: '#141c38',
+              elevated: '#1c264a',
+              border: '#2a3766',
+              cyan: '#22d3ee',
+              violet: '#a855f7',
+              pink: '#ec4899',
+              amber: '#fbbf24',
+              emerald: '#34d399',
+              rose: '#fb7185'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 15% 15%, rgba(168, 85, 247, 0.18), transparent 40%),
+                  radial-gradient(circle at 85% 20%, rgba(34, 211, 238, 0.16), transparent 42%),
+                  radial-gradient(circle at 50% 90%, rgba(236, 72, 153, 0.12), transparent 45%),
+                  #0b1023;
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .glass {
+      background: rgba(20, 28, 56, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .glass-strong {
+      background: rgba(24, 34, 68, 0.92);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #22d3ee 0%, #a855f7 52%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%);
+      transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: rgba(30, 41, 82, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(46, 62, 118, 0.9);
+      border-color: rgba(34, 211, 238, 0.5);
+      transform: translateY(-1px);
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .animate-shake { animation: shake 0.36s ease-in-out; }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.92) translateY(6px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-pop { animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes pulseUrgent {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    .animate-urgent { animation: pulseUrgent 0.7s infinite; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.5); }
+  </style>
+</head>
+<body class="text-slate-100 antialiased selection:bg-cyan-400/30 selection:text-cyan-200">
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-40 glass border-b border-slate-700/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <button id="nav-brand-btn" class="flex items-center gap-2.5 group focus:outline-none">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 via-violet-500 to-pink-500 p-[2px] shadow-lg shadow-violet-500/25">
+          <div class="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center font-black text-lg text-cyan-300 group-hover:scale-105 transition-transform">K</div>
+        </div>
+        <div class="text-left">
+          <div class="font-black tracking-wider text-lg leading-none gradient-text">KANDUHIDI</div>
+          <div class="text-[10px] font-semibold uppercase tracking-widest text-slate-400 hidden sm:block">Guess &amp; Conquer</div>
+        </div>
+      </button>
+
+      <nav class="hidden md:flex items-center gap-1.5" id="desktop-nav">
+        <button data-nav="home" class="nav-link px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/10 transition">Home</button>
+        <button data-nav="solo-setup" class="nav-link px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/10 transition">Play Solo</button>
+        <button data-nav="create-room" class="nav-link px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/10 transition">Create Room</button>
+        <button data-nav="join-room" class="nav-link px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/10 transition">Join Room</button>
+        <button data-nav="leaderboard" class="nav-link px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/10 transition">Leaderboard</button>
+        <button data-nav="how-to-play" class="nav-link px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/10 transition">How to Play</button>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <button id="profile-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-cyan-400/50 transition text-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="header-player-name" class="font-semibold max-w-[90px] sm:max-w-[130px] truncate">Player</span>
+        </button>
+        <button id="sound-toggle-btn" title="Toggle Sound" class="p-2 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-cyan-400/50 transition text-slate-200" aria-label="Toggle Sound">
+          <i data-lucide="volume-2" class="w-4 h-4"></i>
+        </button>
+        <button id="mobile-menu-btn" class="md:hidden p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-200" aria-label="Open Menu">
+          <i data-lucide="menu" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Nav -->
+    <div id="mobile-nav" class="hidden md:hidden border-t border-slate-700/50 bg-slate-900/95 px-4 py-3 space-y-1">
+      <button data-nav="home" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold hover:bg-white/10">Home</button>
+      <button data-nav="solo-setup" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold hover:bg-white/10">Play Solo</button>
+      <button data-nav="create-room" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold hover:bg-white/10">Create Room</button>
+      <button data-nav="join-room" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold hover:bg-white/10">Join Room</button>
+      <button data-nav="leaderboard" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold hover:bg-white/10">Leaderboard &amp; History</button>
+      <button data-nav="how-to-play" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold hover:bg-white/10">How to Play</button>
+    </div>
+  </header>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Main Content Root -->
+  <main id="app-root" class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-16"></main>
+
+  <!-- Reusable Modal Container -->
+  <div id="modal-backdrop" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="modal-content" class="glass-strong rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-600/40 animate-pop max-h-[90vh] overflow-y-auto"></div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. SYNTHESIZED SOUND ENGINE (Web Audio API — zero external sound files)
+       ========================================================================= */
+    const SoundFX = (() => {
+      let ctx = null;
+      let enabled = true;
+      try {
+        const saved = localStorage.getItem('kanduhidi_sound');
+        if (saved !== null) enabled = saved === 'true';
+      } catch (e) {}
+
+      function ensureCtx() {
+        if (!enabled) return null;
+        if (!ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) ctx = new AudioCtx();
+        }
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      }
+
+      function tone(freq, duration, type = 'sine', vol = 0.12, delay = 0) {
+        const c = ensureCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, c.currentTime + delay);
+        gain.gain.setValueAtTime(0.001, c.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(vol, c.currentTime + delay + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + duration);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(c.currentTime + delay);
+        osc.stop(c.currentTime + delay + duration + 0.02);
+      }
+
+      return {
+        isEnabled: () => enabled,
+        toggle() {
+          enabled = !enabled;
+          try { localStorage.setItem('kanduhidi_sound', String(enabled)); } catch (e) {}
+          if (enabled) this.click();
+          return enabled;
+        },
+        click() { tone(540, 0.06, 'triangle', 0.08); },
+        hint() { tone(660, 0.09, 'sine', 0.1); tone(880, 0.12, 'sine', 0.09, 0.08); },
+        highLow(isHigh) { tone(isHigh ? 460 : 320, 0.12, 'triangle', 0.11); },
+        wrong() { tone(210, 0.16, 'sawtooth', 0.09); tone(165, 0.18, 'sawtooth', 0.08, 0.1); },
+        tick() { tone(780, 0.04, 'square', 0.04); },
+        join() { tone(523.25, 0.09, 'sine', 0.09); tone(659.25, 0.12, 'sine', 0.09, 0.08); },
+        win() {
+          [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, 0.18, 'triangle', 0.13, i * 0.09));
+        },
+        roundEnd() { tone(440, 0.14, 'sine', 0.1); tone(349.23, 0.22, 'sine', 0.1, 0.12); }
+      };
+    })();
+
+    /* =========================================================================
+       2. CURATED WORD BANK (Easy / Medium / Hard across rich categories)
+       ========================================================================= */
+    const WORD_BANK = {
+      easy: [
+        { word: 'TIGER', category: 'Animals' }, { word: 'PANDA', category: 'Animals' },
+        { word: 'EAGLE', category: 'Animals' }, { word: 'SHARK', category: 'Animals' },
+        { word: 'ZEBRA', category: 'Animals' }, { word: 'WHALE', category: 'Animals' },
+        { word: 'MANGO', category: 'Food' }, { word: 'PIZZA', category: 'Food' },
+        { word: 'APPLE', category: 'Food' }, { word: 'PASTA', category: 'Food' },
+        { word: 'CURRY', category: 'Food' }, { word: 'GRAPE', category: 'Food' },
+        { word: 'ROBOT', category: 'Technology' }, { word: 'LASER', category: 'Technology' },
+        { word: 'CLOUD', category: 'Technology' }, { word: 'MOUSE', category: 'Technology' },
+        { word: 'PIXEL', category: 'Technology' }, { word: 'CYBER', category: 'Technology' },
+        { word: 'OCEAN', category: 'Nature' }, { word: 'RIVER', category: 'Nature' },
+        { word: 'STORM', category: 'Nature' }, { word: 'FLAME', category: 'Nature' },
+        { word: 'CORAL', category: 'Nature' }, { word: 'SOLAR', category: 'Space' },
+        { word: 'ORBIT', category: 'Space' }, { word: 'COMET', category: 'Space' },
+        { word: 'CHESS', category: 'Sports' }, { word: 'TENNIS', category: 'Sports' },
+        { word: 'PIANO', category: 'Music' }, { word: 'FLUTE', category: 'Music' }
+      ],
+      medium: [
+        { word: 'DOLPHIN', category: 'Animals' }, { word: 'PANTHER', category: 'Animals' },
+        { word: 'PENGUIN', category: 'Animals' }, { word: 'CHEETAH', category: 'Animals' },
+        { word: 'OCTOPUS', category: 'Animals' }, { word: 'FALCON', category: 'Animals' },
+        { word: 'AVOCADO', category: 'Food' }, { word: 'BIRYANI', category: 'Food' },
+        { word: 'PRETZEL', category: 'Food' }, { word: 'PANCAKE', category: 'Food' },
+        { word: 'BROWSER', category: 'Technology' }, { word: 'NETWORK', category: 'Technology' },
+        { word: 'QUANTUM', category: 'Technology' }, { word: 'CIRCUIT', category: 'Technology' },
+        { word: 'ANDROID', category: 'Technology' }, { word: 'SERVER', category: 'Technology' },
+        { word: 'VOLCANO', category: 'Nature' }, { word: 'GLACIER', category: 'Nature' },
+        { word: 'MONSOON', category: 'Nature' }, { word: 'CANYON', category: 'Nature' },
+        { word: 'GALAXY', category: 'Space' }, { word: 'ECLIPSE', category: 'Space' },
+        { word: 'NEBULA', category: 'Space' }, { word: 'GRAVITY', category: 'Space' },
+        { word: 'CRICKET', category: 'Sports' }, { word: 'ARCHERY', category: 'Sports' },
+        { word: 'GUITAR', category: 'Music' }, { word: 'TRUMPET', category: 'Music' },
+        { word: 'COMPASS', category: 'Travel' }, { word: 'PYRAMID', category: 'Geography' }
+      ],
+      hard: [
+        { word: 'CHAMELEON', category: 'Animals' }, { word: 'FLAMINGO', category: 'Animals' },
+        { word: 'ALBATROSS', category: 'Animals' }, { word: 'PLATYPUS', category: 'Animals' },
+        { word: 'ALGORITHM', category: 'Technology' }, { word: 'ENCRYPTION', category: 'Technology' },
+        { word: 'BLOCKCHAIN', category: 'Technology' }, { word: 'MICROCHIP', category: 'Technology' },
+        { word: 'CYBERNETIC', category: 'Technology' }, { word: 'SATELLITE', category: 'Space' },
+        { word: 'ASTEROID', category: 'Space' }, { word: 'SUPERNOVA', category: 'Space' },
+        { word: 'TELESCOPE', category: 'Space' }, { word: 'ASTRONAUT', category: 'Space' },
+        { word: 'AVALANCHE', category: 'Nature' }, { word: 'RAINFOREST', category: 'Nature' },
+        { word: 'WATERFALL', category: 'Nature' }, { word: 'HURRICANE', category: 'Nature' },
+        { word: 'CROISSANT', category: 'Food' }, { word: 'CINNAMON', category: 'Food' },
+        { word: 'BLUEBERRY', category: 'Food' }, { word: 'PISTACHIO', category: 'Food' },
+        { word: 'BADMINTON', category: 'Sports' }, { word: 'GYMNASTICS', category: 'Sports' },
+        { word: 'SYMPHONY', category: 'Music' }, { word: 'SAXOPHONE', category: 'Music' },
+        { word: 'LABYRINTH', category: 'Geography' }, { word: 'PENINSULA', category: 'Geography' }
+      ]
+    };
+
+    const DIFFICULTY_PRESETS = {
+      easy:   { minNum: 1, maxNum: 50,  timeLimit: 75, attemptLimit: 10 },
+      medium: { minNum: 1, maxNum: 100, timeLimit: 60, attemptLimit: 8 },
+      hard:   { minNum: 1, maxNum: 250, timeLimit: 45, attemptLimit: 6 }
+    };
+
+    const BOT_NAMES = ['Aarav', 'Diya', 'Kabir', 'Meera', 'Rohan', 'Ananya', 'Vikram', 'Zara'];
+
+    /* =========================================================================
+       3. AUTHORITATIVE GAME SERVER ENGINE & REAL-TIME MULTI-TAB SYNC
+       Secret answers are encapsulated inside `secretStore` and NEVER exposed
+       in room snapshots until a round finishes.
+       ========================================================================= */
+    const KanduhidiServer = (() => {
+      const STORAGE_KEY_ROOMS = 'kanduhidi_rooms_v1';
+      const STORAGE_KEY_LEADERBOARD = 'kanduhidi_leaderboard_v1';
+      const STORAGE_KEY_HISTORY = 'kanduhidi_history_v1';
+
+      // Encapsulated secrets — unreachable from client state snapshots
+      const secretStore = new Map(); // roomId -> { type, answer, category, revealedIndices }
+      const rooms = new Map();
+      const listeners = new Set();
+      const submitLocks = new Map(); // `${roomId}:${playerId}` -> timestamp (anti-spam / simultaneous guess guard)
+
+      let channel = null;
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          channel = new BroadcastChannel('kanduhidi_realtime_sync');
+          channel.onmessage = (ev) => {
+            if (ev.data && ev.data.type === 'ROOMS_SYNC') {
+              importExternalRooms(ev.data.rooms, ev.data.secrets);
+              notify();
+            }
+          };
+        }
+      } catch (e) {}
+
+      window.addEventListener('storage', (ev) => {
+        if (ev.key === STORAGE_KEY_ROOMS && ev.newValue) {
+          try {
+            const parsed = JSON.parse(ev.newValue);
+            importExternalRooms(parsed.rooms, parsed.secrets);
+            notify();
+          } catch (e) {}
+        }
+      });
+
+      function importExternalRooms(serializedRooms, serializedSecrets) {
+        if (!Array.isArray(serializedRooms)) return;
+        rooms.clear();
+        serializedRooms.forEach((r) => rooms.set(r.id, r));
+        if (serializedSecrets && typeof serializedSecrets === 'object') {
+          Object.entries(serializedSecrets).forEach(([k, v]) => secretStore.set(k, v));
+        }
+      }
+
+      function persistAndBroadcast() {
+        const roomArr = Array.from(rooms.values());
+        const secObj = Object.fromEntries(secretStore.entries());
+        try {
+          localStorage.setItem(STORAGE_KEY_ROOMS, JSON.stringify({ rooms: roomArr, secrets: secObj, ts: Date.now() }));
+        } catch (e) {}
+        try {
+          if (channel) channel.postMessage({ type: 'ROOMS_SYNC', rooms: roomArr, secrets: secObj });
+        } catch (e) {}
+        notify();
+      }
+
+      function notify() {
+        listeners.forEach((fn) => {
+          try { fn(); } catch (e) {}
+        });
+      }
+
+      function generateRoomCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        do {
+          code = '';
+          for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+        } while (rooms.has(code));
+        return code;
+      }
+
+      function pickWord(difficulty, usedWords = []) {
+        const pool = WORD_BANK[difficulty] || WORD_BANK.medium;
+        const fresh = pool.filter((item) => !usedWords.includes(item.word));
+        const list = fresh.length ? fresh : pool;
+        return list[Math.floor(Math.random() * list.length)];
+      }
+
+      function pickNumber(min, max) {
+        const lo = Math.min(Number(min) || 1, Number(max) || 100);
+        const hi = Math.max(Number(min) || 1, Number(max) || 100);
+        return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+      }
+
+      function sanitizeRoomForClient(room) {
+        if (!room) return null;
+        const sec = secretStore.get(room.id);
+        const isRoundEnded = room.status === 'round_over' || room.status === 'finished';
+        let publicChallenge = null;
+
+        if (sec) {
+          if (sec.type === 'number') {
+            publicChallenge = {
+              type: 'number',
+              min: room.settings.minNum,
+              max: room.settings.maxNum,
+              narrowMin: room.roundMeta.narrowMin,
+              narrowMax: room.roundMeta.narrowMax,
+              revealedAnswer: isRoundEnded ? sec.answer : null
+            };
+          } else {
+            const masked = sec.answer.split('').map((ch, idx) =>
+              isRoundEnded || sec.revealedIndices.includes(idx) ? ch : '_'
+            );
+            publicChallenge = {
+              type: 'word',
+              length: sec.answer.length,
+              category: room.settings.showWordCategory ? sec.category : 'Hidden',
+              masked,
+              revealedCount: sec.revealedIndices.length,
+              revealedAnswer: isRoundEnded ? sec.answer : null
+            };
+          }
+        }
+
+        return {
+          ...room,
+          players: room.players.map((p) => ({ ...p })),
+          feed: room.feed.slice(-40),
+          challenge: publicChallenge
+        };
+      }
+
+      function initSeedRooms() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY_ROOMS);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed.rooms) && parsed.rooms.length > 0) {
+              importExternalRooms(parsed.rooms, parsed.secrets);
+              return;
+            }
+          }
+        } catch (e) {}
+
+        // Pre-seed 3 distinct public rooms to showcase independent room-based customization
+        const seeds = [
+          {
+            id: 'NUM101',
+            name: 'Number Blitz Arena',
+            hostName: 'Aarav',
+            isPublic: true,
+            password: '',
+            settings: {
+              category: 'number',
+              difficulty: 'easy',
+              minNum: 1,
+              maxNum: 50,
+              rounds: 3,
+              timeLimit: 60,
+              attemptLimit: 8,
+              showWordCategory: true,
+              allowLetterHints: true,
+              autoNextRound: true,
+              scoring: { basePoints: 100, attemptBonus: 15, timeBonusPerSec: 2, wrongPenalty: 0, participation: 10 }
+            }
+          },
+          {
+            id: 'WRD202',
+            name: 'Word Masters Lounge',
+            hostName: 'Diya',
+            isPublic: true,
+            password: '',
+            settings: {
+              category: 'word',
+              difficulty: 'medium',
+              minNum: 1,
+              maxNum: 100,
+              rounds: 4,
+              timeLimit: 75,
+              attemptLimit: 8,
+              showWordCategory: true,
+              allowLetterHints: true,
+              autoNextRound: false,
+              scoring: { basePoints: 120, attemptBonus: 20, timeBonusPerSec: 2, wrongPenalty: 5, participation: 15 }
+            }
+          },
+          {
+            id: 'MIX303',
+            name: 'Pro Mixed Championship',
+            hostName: 'Kabir',
+            isPublic: true,
+            password: '',
+            settings: {
+              category: 'both',
+              difficulty: 'hard',
+              minNum: 1,
+              maxNum: 250,
+              rounds: 5,
+              timeLimit: 50,
+              attemptLimit: 6,
+              showWordCategory: true,
+              allowLetterHints: true,
+              autoNextRound: true,
+              scoring: { basePoints: 150, attemptBonus: 25, timeBonusPerSec: 3, wrongPenalty: 10, participation: 20 }
+            }
+          }
+        ];
+
+        seeds.forEach((s) => {
+          const botId = 'bot_' + s.id.toLowerCase();
+          rooms.set(s.id, {
+            id: s.id,
+            name: s.name,
+            hostId: botId,
+            isPublic: s.isPublic,
+            password: s.password,
+            status: 'lobby', // lobby | playing | round_over | finished
+            currentRound: 0,
+            settings: s.settings,
+            players: [
+              { id: botId, name: s.hostName, isHost: true, isBot: true, connected: true, score: 0, wins: 0, roundsPlayed: 0, attemptsThisRound: 0, solvedThisRound: false, lastFeedback: '' }
+            ],
+            feed: [{ id: Date.now() + Math.random(), system: true, text: `${s.hostName} opened ${s.name}.`, ts: Date.now() }],
+            roundMeta: { startedAt: 0, endsAt: 0, narrowMin: s.settings.minNum, narrowMax: s.settings.maxNum, winnerId: null, winnerName: null, usedWords: [] },
+            createdAt: Date.now()
+          });
+        });
+      }
+
+      function createRoom(hostPlayer, config) {
+        const id = generateRoomCode();
+        const preset = DIFFICULTY_PRESETS[config.difficulty] || DIFFICULTY_PRESETS.medium;
+        const minNum = Number(config.minNum) || preset.minNum;
+        const maxNum = Math.max(minNum + 5, Number(config.maxNum) || preset.maxNum);
+
+        const room = {
+          id,
+          name: (config.name || `${hostPlayer.name}'s Room`).trim().slice(0, 32),
+          hostId: hostPlayer.id,
+          isPublic: config.isPublic !== false,
+          password: (config.password || '').trim(),
+          status: 'lobby',
+          currentRound: 0,
+          settings: {
+            category: config.category || 'both',
+            difficulty: config.difficulty || 'medium',
+            minNum,
+            maxNum,
+            rounds: Math.max(1, Math.min(10, Number(config.rounds) || 3)),
+            timeLimit: Math.max(20, Math.min(180, Number(config.timeLimit) || preset.timeLimit)),
+            attemptLimit: Math.max(0, Math.min(20, Number(config.attemptLimit ?? preset.attemptLimit))),
+            showWordCategory: config.showWordCategory !== false,
+            allowLetterHints: config.allowLetterHints !== false,
+            autoNextRound: Boolean(config.autoNextRound),
+            scoring: {
+              basePoints: Math.max(10, Number(config.scoring?.basePoints ?? 100)),
+              attemptBonus: Math.max(0, Number(config.scoring?.attemptBonus ?? 15)),
+              timeBonusPerSec: Math.max(0, Number(config.scoring?.timeBonusPerSec ?? 2)),
+              wrongPenalty: Math.max(0, Number(config.scoring?.wrongPenalty ?? 0)),
+              participation: Math.max(0, Number(config.scoring?.participation ?? 10))
+            }
+          },
+          players: [
+            {
+              id: hostPlayer.id,
+              name: hostPlayer.name,
+              isHost: true,
+              isBot: false,
+              connected: true,
+              score: 0,
+              wins: 0,
+              roundsPlayed: 0,
+              attemptsThisRound: 0,
+              solvedThisRound: false,
+              lastFeedback: ''
+            }
+          ],
+          feed: [{ id: Date.now(), system: true, text: `${hostPlayer.name} created the room.`, ts: Date.now() }],
+          roundMeta: { startedAt: 0, endsAt: 0, narrowMin: minNum, narrowMax: maxNum, winnerId: null, winnerName: null, usedWords: [] },
+          createdAt: Date.now()
+        };
+
+        rooms.set(id, room);
+        persistAndBroadcast();
+        return { ok: true, room: sanitizeRoomForClient(room) };
+      }
+
+      function joinRoom(roomId, player, password = '') {
+        const code = (roomId || '').trim().toUpperCase();
+        const room = rooms.get(code);
+        if (!room) return { ok: false, error: `Room "${code}" not found.` };
+        if (room.password && room.password !== password.trim()) {
+          return { ok: false, error: 'Incorrect room password.' };
+        }
+
+        const existing = room.players.find((p) => p.id === player.id);
+        if (existing) {
+          existing.connected = true;
+          existing.name = player.name;
+          room.feed.push({ id: Date.now() + Math.random(), system: true, text: `${player.name} reconnected.`, ts: Date.now() });
+          persistAndBroadcast();
+          return { ok: true, room: sanitizeRoomForClient(room) };
+        }
+
+        if (room.players.length >= 8) {
+          return { ok: false, error: 'Room is full (max 8 players).' };
+        }
+
+        // If joining a seeded bot-hosted room as the first human, promote human to host so they can control settings & start!
+        const hasHuman = room.players.some((p) => !p.isBot);
+        const makeHost = !hasHuman;
+        if (makeHost) {
+          room.players.forEach((p) => (p.isHost = false));
+          room.hostId = player.id;
+        }
+
+        room.players.push({
+          id: player.id,
+          name: player.name,
+          isHost: makeHost,
+          isBot: false,
+          connected: true,
+          score: 0,
+          wins: 0,
+          roundsPlayed: 0,
+          attemptsThisRound: 0,
+          solvedThisRound: false,
+          lastFeedback: ''
+        });
+        room.feed.push({
+          id: Date.now() + Math.random(),
+          system: true,
+          text: `${player.name} joined the room${makeHost ? ' (Host)' : ''}.`,
+          ts: Date.now()
+        });
+        persistAndBroadcast();
+        return { ok: true, room: sanitizeRoomForClient(room) };
+      }
+
+      function leaveRoom(roomId, playerId) {
+        const room = rooms.get(roomId);
+        if (!room) return;
+        const idx = room.players.findIndex((p) => p.id === playerId);
+        if (idx === -1) return;
+        const leaving = room.players[idx];
+        room.players.splice(idx, 1);
+        room.feed.push({ id: Date.now() + Math.random(), system: true, text: `${leaving.name} left the room.`, ts: Date.now() });
+
+        if (room.players.length === 0) {
+          rooms.delete(roomId);
+          secretStore.delete(roomId);
+        } else if (room.hostId === playerId) {
+          const nextHost = room.players.find((p) => !p.isBot) || room.players[0];
+          nextHost.isHost = true;
+          room.hostId = nextHost.id;
+          room.feed.push({ id: Date.now() + Math.random(), system: true, text: `${nextHost.name} is now the Host.`, ts: Date.now() });
+        }
+        persistAndBroadcast();
+      }
+
+      function addBotToRoom(roomId, requesterId) {
+        const room = rooms.get(roomId);
+        if (!room) return { ok: false, error: 'Room not found.' };
+        if (room.hostId !== requesterId) return { ok: false, error: 'Only the host can add AI players.' };
+        if (room.players.length >= 8) return { ok: false, error: 'Room is full (max 8 players).' };
+
+        const usedNames = new Set(room.players.map((p) => p.name));
+        const available = BOT_NAMES.filter((n) => !usedNames.has(n));
+        const botName = available.length ? available[Math.floor(Math.random() * available.length)] : `Bot ${room.players.length + 1}`;
+        const botId = 'bot_' + Date.now() + '_' + Math.floor(Math.random() * 999);
+
+        room.players.push({
+          id: botId,
+          name: botName,
+          isHost: false,
+          isBot: true,
+          connected: true,
+          score: 0,
+          wins: 0,
+          roundsPlayed: 0,
+          attemptsThisRound: 0,
+          solvedThisRound: false,
+          lastFeedback: ''
+        });
+        room.feed.push({ id: Date.now() + Math.random(), system: true, text: `${botName} (AI) joined the lobby.`, ts: Date.now() });
+        persistAndBroadcast();
+        return { ok: true };
+      }
+
+      function removePlayer(roomId, requesterId, targetId) {
+        const room = rooms.get(roomId);
+        if (!room || room.hostId !== requesterId || targetId === requesterId) return { ok: false, error: 'Not allowed.' };
+        const idx = room.players.findIndex((p) => p.id === targetId);
+        if (idx === -1) return { ok: false, error: 'Player not found.' };
+        const removed = room.players.splice(idx, 1)[0];
+        room.feed.push({ id: Date.now() + Math.random(), system: true, text: `${removed.name} was removed by the host.`, ts: Date.now() });
+        persistAndBroadcast();
+        return { ok: true };
+      }
+
+      function updateSettings(roomId, requesterId, newSettings) {
+        const room = rooms.get(roomId);
+        if (!room) return { ok: false, error: 'Room not found.' };
+        if (room.hostId !== requesterId) return { ok: false, error: 'Only the host can modify room settings.' };
+        if (room.status === 'playing') return { ok: false, error: 'Cannot change settings mid-round.' };
+
+        const minNum = Number(newSettings.minNum ?? room.settings.minNum);
+        const maxNum = Math.max(minNum + 5, Number(newSettings.maxNum ?? room.settings.maxNum));
+        room.settings = {
+          ...room.settings,
+          ...newSettings,
+          minNum,
+          maxNum,
+          rounds: Math.max(1, Math.min(10, Number(newSettings.rounds ?? room.settings.rounds))),
+          timeLimit: Math.max(20, Math.min(180, Number(newSettings.timeLimit ?? room.settings.timeLimit))),
+          attemptLimit: Math.max(0, Math.min(20, Number(newSettings.attemptLimit ?? room.settings.attemptLimit))),
+          scoring: {
+            ...room.settings.scoring,
+            ...(newSettings.scoring || {})
+          }
+        };
+        room.feed.push({ id: Date.now() + Math.random(), system: true, text: 'Host updated room settings.', ts: Date.now() });
+        persistAndBroadcast();
+        return { ok: true };
+      }
+
+      function startNextRound(roomId, requesterId, isAuto = false) {
+        const room = rooms.get(roomId);
+        if (!room) return { ok: false, error: 'Room not found.' };
+        if (!isAuto && room.hostId !== requesterId) return { ok: false, error: 'Only the host can start the round.' };
+        if (room.players.length < 2 && !room.isSolo) {
+          return { ok: false, error: 'Add at least 1 more player (or an AI opponent) to start multiplayer.' };
+        }
+
+        if (room.status === 'finished') {
+          // Reset for Play Again
+          room.currentRound = 0;
+          room.roundMeta.usedWords = [];
+          room.players.forEach((p) => {
+            p.score = 0;
+            p.wins = 0;
+            p.roundsPlayed = 0;
+          });
+        }
+
+        room.currentRound += 1;
+        room.status = 'playing';
+
+        // Decide category for this round
+        let roundType = room.settings.category;
+        if (roundType === 'both') {
+          roundType = room.currentRound % 2 === 1 ? 'number' : 'word';
+        }
+
+        if (roundType === 'number') {
+          const secret = pickNumber(room.settings.minNum, room.settings.maxNum);
+          secretStore.set(room.id, { type: 'number', answer: secret });
+          room.roundMeta = {
+            startedAt: Date.now(),
+            endsAt: Date.now() + room.settings.timeLimit * 1000,
+            narrowMin: room.settings.minNum,
+            narrowMax: room.settings.maxNum,
+            winnerId: null,
+            winnerName: null,
+            usedWords: room.roundMeta.usedWords || []
+          };
+        } else {
+          const picked = pickWord(room.settings.difficulty, room.roundMeta.usedWords || []);
+          const used = [...(room.roundMeta.usedWords || []), picked.word];
+          secretStore.set(room.id, { type: 'word', answer: picked.word, category: picked.category, revealedIndices: [0] });
+          room.roundMeta = {
+            startedAt: Date.now(),
+            endsAt: Date.now() + room.settings.timeLimit * 1000,
+            narrowMin: room.settings.minNum,
+            narrowMax: room.settings.maxNum,
+            winnerId: null,
+            winnerName: null,
+            usedWords: used
+          };
+        }
+
+        room.players.forEach((p) => {
+          p.attemptsThisRound = 0;
+          p.solvedThisRound = false;
+          p.lastFeedback = '';
+          p.roundsPlayed += 1;
+        });
+
+        room.feed.push({
+          id: Date.now() + Math.random(),
+          system: true,
+          text: `Round ${room.currentRound} started — ${roundType === 'number' ? `Number (${room.settings.minNum}–${room.settings.maxNum})` : 'Secret Word'}!`,
+          ts: Date.now()
+        });
+
+        persistAndBroadcast();
+        return { ok: true };
+      }
+
+      function revealWordHint(roomId, playerId) {
+        const room = rooms.get(roomId);
+        const sec = secretStore.get(roomId);
+        if (!room || !sec || sec.type !== 'word' || room.status !== 'playing') {
+          return { ok: false, error: 'Hints unavailable right now.' };
+        }
+        if (!room.settings.allowLetterHints) {
+          return { ok: false, error: 'Letter hints are disabled in this room.' };
+        }
+        const unrevealed = [];
+        for (let i = 0; i < sec.answer.length; i++) {
+          if (!sec.revealedIndices.includes(i)) unrevealed.push(i);
+        }
+        if (unrevealed.length <= 1) {
+          return { ok: false, error: 'No more letter hints available!' };
+        }
+        const pick = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+        sec.revealedIndices.push(pick);
+        const player = room.players.find((p) => p.id === playerId);
+        room.feed.push({
+          id: Date.now() + Math.random(),
+          system: true,
+          text: `${player ? player.name : 'Someone'} revealed a letter hint (${sec.answer[pick]}).`,
+          ts: Date.now()
+        });
+        persistAndBroadcast();
+        return { ok: true };
+      }
+
+      function evaluateWordFeedback(guess, secret) {
+        const g = guess.toUpperCase();
+        const s = secret.toUpperCase();
+        const result = [];
+        const remaining = {};
+        for (let i = 0; i < s.length; i++) {
+          if (g[i] === s[i]) {
+            result[i] = { char: g[i] || '', status: 'exact' };
+          } else {
+            remaining[s[i]] = (remaining[s[i]] || 0) + 1;
+          }
+        }
+        for (let i = 0; i < g.length; i++) {
+          if (result[i]) continue;
+          const ch = g[i];
+          if (remaining[ch] > 0) {
+            result[i] = { char: ch, status: 'present' };
+            remaining[ch] -= 1;
+          } else {
+            result[i] = { char: ch, status: 'absent' };
+          }
+        }
+        return result;
+      }
+
+      function submitGuess(roomId, playerId, rawGuess) {
+        const room = rooms.get(roomId);
+        const sec = secretStore.get(roomId);
+        if (!room || !sec || room.status !== 'playing') {
+          return { ok: false, error: 'Round is not active.' };
+        }
+        const player = room.players.find((p) => p.id === playerId);
+        if (!player) return { ok: false, error: 'Player not in room.' };
+        if (player.solvedThisRound) return { ok: false, error: 'You already solved this round!' };
+
+        // Anti-spam / prevent simultaneous duplicate submissions
+        const lockKey = `${roomId}:${playerId}`;
+        const now = Date.now();
+        if (submitLocks.get(lockKey) && now - submitLocks.get(lockKey) < 350) {
+          return { ok: false, error: 'Please wait a moment before submitting again.' };
+        }
+        submitLocks.set(lockKey, now);
+
+        if (now >= room.roundMeta.endsAt) {
+          endRound(roomId, 'Time expired!');
+          return { ok: false, error: 'Time is up!' };
+        }
+
+        const attemptLimit = room.settings.attemptLimit;
+        if (attemptLimit > 0 && player.attemptsThisRound >= attemptLimit) {
+          return { ok: false, error: 'No attempts remaining for this round.' };
+        }
+
+        const scoring = room.settings.scoring;
+        const secondsLeft = Math.max(0, Math.ceil((room.roundMeta.endsAt - now) / 1000));
+
+        if (sec.type === 'number') {
+          const num = parseInt(String(rawGuess).trim(), 10);
+          if (Number.isNaN(num)) return { ok: false, error: 'Enter a valid number.' };
+          if (num < room.settings.minNum || num > room.settings.maxNum) {
+            return { ok: false, error: `Number must be between ${room.settings.minNum} and ${room.settings.maxNum}.` };
+          }
+
+          player.attemptsThisRound += 1;
+          if (num === sec.answer) {
+            const unusedAttempts = attemptLimit > 0 ? Math.max(0, attemptLimit - player.attemptsThisRound) : Math.max(0, 10 - player.attemptsThisRound);
+            const attemptBonus = unusedAttempts * scoring.attemptBonus;
+            const timeBonus = secondsLeft * scoring.timeBonusPerSec;
+            const totalAward = scoring.basePoints + attemptBonus + timeBonus;
+
+            player.score += totalAward;
+            player.wins += 1;
+            player.solvedThisRound = true;
+            player.lastFeedback = `Correct! +${totalAward} pts`;
+
+            room.roundMeta.winnerId = player.id;
+            room.roundMeta.winnerName = player.name;
+            room.roundMeta.lastBreakdown = { base: scoring.basePoints, attemptBonus, timeBonus, total: totalAward };
+
+            room.feed.push({
+              id: Date.now() + Math.random(),
+              playerId: player.id,
+              playerName: player.name,
+              guess: String(num),
+              outcome: 'correct',
+              hint: `Correct! (+${totalAward} pts)`,
+              ts: now
+            });
+            endRound(roomId, `${player.name} guessed ${sec.answer} and won the round!`);
+            return { ok: true, outcome: 'correct', points: totalAward, breakdown: room.roundMeta.lastBreakdown };
+          } else {
+            const isHigh = num > sec.answer;
+            if (isHigh) room.roundMeta.narrowMax = Math.min(room.roundMeta.narrowMax, num - 1);
+            else room.roundMeta.narrowMin = Math.max(room.roundMeta.narrowMin, num + 1);
+
+            const diff = Math.abs(num - sec.answer);
+            const span = Math.max(1, room.settings.maxNum - room.settings.minNum);
+            const proximity = diff <= Math.max(2, span * 0.04) ? 'Boiling Hot!' : diff <= span * 0.12 ? 'Warm' : 'Cold';
+            const hintText = `${isHigh ? 'Too High' : 'Too Low'} · ${proximity}`;
+
+            if (scoring.wrongPenalty > 0) {
+              player.score = Math.max(0, player.score - scoring.wrongPenalty);
+            }
+            player.lastFeedback = hintText;
+
+            room.feed.push({
+              id: Date.now() + Math.random(),
+              playerId: player.id,
+              playerName: player.name,
+              guess: String(num),
+              outcome: isHigh ? 'too_high' : 'too_low',
+              hint: hintText,
+              ts: now
+            });
+
+            checkAllOutOfAttempts(roomId);
+            persistAndBroadcast();
+            return { ok: true, outcome: isHigh ? 'too_high' : 'too_low', hint: hintText };
+          }
+        } else {
+          const clean = String(rawGuess).trim().toUpperCase().replace(/[^A-Z]/g, '');
+          if (!clean) return { ok: false, error: 'Enter a valid word (letters only).' };
+
+          player.attemptsThisRound += 1;
+          if (clean === sec.answer) {
+            const unusedAttempts = attemptLimit > 0 ? Math.max(0, attemptLimit - player.attemptsThisRound) : Math.max(0, 10 - player.attemptsThisRound);
+            const attemptBonus = unusedAttempts * scoring.attemptBonus;
+            const timeBonus = secondsLeft * scoring.timeBonusPerSec;
+            const totalAward = scoring.basePoints + attemptBonus + timeBonus;
+
+            player.score += totalAward;
+            player.wins += 1;
+            player.solvedThisRound = true;
+            player.lastFeedback = `Correct! +${totalAward} pts`;
+
+            room.roundMeta.winnerId = player.id;
+            room.roundMeta.winnerName = player.name;
+            room.roundMeta.lastBreakdown = { base: scoring.basePoints, attemptBonus, timeBonus, total: totalAward };
+
+            room.feed.push({
+              id: Date.now() + Math.random(),
+              playerId: player.id,
+              playerName: player.name,
+              guess: clean,
+              outcome: 'correct',
+              tiles: evaluateWordFeedback(clean, sec.answer),
+              hint: `Correct! (+${totalAward} pts)`,
+              ts: now
+            });
+            endRound(roomId, `${player.name} guessed "${sec.answer}" and won the round!`);
+            return { ok: true, outcome: 'correct', points: totalAward, breakdown: room.roundMeta.lastBreakdown };
+          } else {
+            const tiles = evaluateWordFeedback(clean, sec.answer);
+            const exactCount = tiles.filter((t) => t.status === 'exact').length;
+            const presentCount = tiles.filter((t) => t.status === 'present').length;
+            let hintText = '';
+            if (clean.length !== sec.answer.length) {
+              hintText = `Wrong length (${clean.length} vs ${sec.answer.length} letters)`;
+            } else {
+              hintText = `${exactCount} exact · ${presentCount} misplaced`;
+            }
+
+            if (scoring.wrongPenalty > 0) {
+              player.score = Math.max(0, player.score - scoring.wrongPenalty);
+            }
+            player.lastFeedback = hintText;
+
+            room.feed.push({
+              id: Date.now() + Math.random(),
+              playerId: player.id,
+              playerName: player.name,
+              guess: clean,
+              outcome: 'incorrect',
+              tiles,
+              hint: hintText,
+              ts: now
+            });
+
+            checkAllOutOfAttempts(roomId);
+            persistAndBroadcast();
+            return { ok: true, outcome: 'incorrect', hint: hintText, tiles };
+          }
+        }
+      }
+
+      function checkAllOutOfAttempts(roomId) {
+        const room = rooms.get(roomId);
+        if (!room || room.status !== 'playing') return;
+        const limit = room.settings.attemptLimit;
+        if (limit <= 0) return;
+        const allExhausted = room.players.every((p) => p.attemptsThisRound >= limit || p.solvedThisRound);
+        if (allExhausted) {
+          endRound(roomId, 'All players used their attempts!');
+        }
+      }
+
+      function endRound(roomId, reason) {
+        const room = rooms.get(roomId);
+        if (!room || room.status !== 'playing') return;
+
+        // Award participation points to non-winners who attempted
+        const partPts = room.settings.scoring.participation || 0;
+        if (partPts > 0) {
+          room.players.forEach((p) => {
+            if (!p.solvedThisRound && p.attemptsThisRound > 0) {
+              p.score += partPts;
+            }
+          });
+        }
+
+        const isFinal = room.currentRound >= room.settings.rounds;
+        room.status = isFinal ? 'finished' : 'round_over';
+        room.roundMeta.endReason = reason;
+        room.roundMeta.endedAt = Date.now();
+        room.feed.push({ id: Date.now() + Math.random(), system: true, text: reason, ts: Date.now() });
+
+        if (isFinal) {
+          recordMatchToLeaderboardAndHistory(room);
+        }
+        persistAndBroadcast();
+      }
+
+      function forceEndGame(roomId, requesterId) {
+        const room = rooms.get(roomId);
+        if (!room || room.hostId !== requesterId) return { ok: false, error: 'Only host can end the game.' };
+        room.status = 'finished';
+        room.roundMeta.endReason = 'Game ended by host.';
+        recordMatchToLeaderboardAndHistory(room);
+        persistAndBroadcast();
+        return { ok: true };
+      }
+
+      function tickBotsAndTimers(activeRoomId) {
+        const room = rooms.get(activeRoomId);
+        if (!room || room.status !== 'playing') return;
+
+        const now = Date.now();
+        if (now >= room.roundMeta.endsAt) {
+          endRound(activeRoomId, 'Time expired!');
+          return;
+        }
+
+        // Let bots make realistic guesses periodically
+        const sec = secretStore.get(activeRoomId);
+        if (!sec) return;
+        const bots = room.players.filter((p) => p.isBot && !p.solvedThisRound && (room.settings.attemptLimit === 0 || p.attemptsThisRound < room.settings.attemptLimit));
+        if (!bots.length) return;
+
+        // ~18% chance per 1-second tick for one random bot to submit a guess
+        if (Math.random() < 0.22) {
+          const bot = bots[Math.floor(Math.random() * bots.length)];
+          if (sec.type === 'number') {
+            const lo = room.roundMeta.narrowMin;
+            const hi = room.roundMeta.narrowMax;
+            const mid = Math.round((lo + hi) / 2);
+            const jitter = Math.max(1, Math.round((hi - lo) * 0.25));
+            const guess = Math.min(hi, Math.max(lo, mid + Math.floor(Math.random() * (jitter * 2 + 1)) - jitter));
+            submitGuess(activeRoomId, bot.id, guess);
+          } else {
+            const pool = WORD_BANK[room.settings.difficulty] || WORD_BANK.medium;
+            const sameLen = pool.filter((w) => w.word.length === sec.answer.length);
+            const guessObj = sameLen.length && Math.random() < 0.7
+              ? sameLen[Math.floor(Math.random() * sameLen.length)]
+              : pool[Math.floor(Math.random() * pool.length)];
+            submitGuess(activeRoomId, bot.id, guessObj.word);
+          }
+        }
+      }
+
+      /* Global Leaderboard & Game History persistence */
+      function getLeaderboard() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_LEADERBOARD);
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return [
+          { name: 'Aarav', mode: 'multiplayer', score: 640, wins: 5, rounds: 9, updatedAt: Date.now() - 86400000 },
+          { name: 'Diya', mode: 'solo', score: 520, wins: 4, rounds: 6, updatedAt: Date.now() - 72000000 },
+          { name: 'Kabir', mode: 'multiplayer', score: 485, wins: 3, rounds: 8, updatedAt: Date.now() - 36000000 }
+        ];
+      }
+
+      function saveLeaderboard(entries) {
+        try { localStorage.setItem(STORAGE_KEY_LEADERBOARD, JSON.stringify(entries.slice(0, 50))); } catch (e) {}
+      }
+
+      function getHistory() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return [];
+      }
+
+      function saveHistory(entries) {
+        try { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(entries.slice(0, 30))); } catch (e) {}
+      }
+
+      function recordMatchToLeaderboardAndHistory(room) {
+        const sorted = [...room.players].sort((a, b) => b.score - a.score || b.wins - a.wins);
+        const top = sorted[0];
+        const mode = room.isSolo ? 'solo' : 'multiplayer';
+
+        // Update Leaderboard for all human players
+        const lb = getLeaderboard();
+        room.players.filter((p) => !p.isBot).forEach((p) => {
+          const existing = lb.find((e) => e.name.toLowerCase() === p.name.toLowerCase() && e.mode === mode);
+          if (existing) {
+            existing.score += p.score;
+            existing.wins += p.wins;
+            existing.rounds += p.roundsPlayed;
+            existing.updatedAt = Date.now();
+          } else {
+            lb.push({ name: p.name, mode, score: p.score, wins: p.wins, rounds: p.roundsPlayed, updatedAt: Date.now() });
+          }
+        });
+        lb.sort((a, b) => b.score - a.score);
+        saveLeaderboard(lb);
+
+        // Append to Game History
+        const hist = getHistory();
+        hist.unshift({
+          id: Date.now(),
+          mode,
+          roomId: room.isSolo ? 'SOLO' : room.id,
+          roomName: room.isSolo ? 'Solo Session' : room.name,
+          category: room.settings.category,
+          difficulty: room.settings.difficulty,
+          rounds: room.currentRound,
+          winner: top ? top.name : '—',
+          topScore: top ? top.score : 0,
+          playersCount: room.players.length,
+          ts: Date.now()
+        });
+        saveHistory(hist);
+      }
+
+      function createSoloSession(player, config) {
+        const res = createRoom(player, { ...config, name: 'Solo Arena', isPublic: false, password: '' });
+        const room = rooms.get(res.room.id);
+        room.isSolo = true;
+        startNextRound(room.id, player.id);
+        return sanitizeRoomForClient(rooms.get(room.id));
+      }
+
+      initSeedRooms();
+
+      return {
+        subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+        listPublicRooms() {
+          return Array.from(rooms.values())
+            .filter((r) => r.isPublic && !r.isSolo)
+            .map((r) => sanitizeRoomForClient(r));
+        },
+        getRoom(roomId) { return sanitizeRoomForClient(rooms.get(roomId)); },
+        createRoom,
+        createSoloSession,
+        joinRoom,
+        leaveRoom,
+        addBotToRoom,
+        removePlayer,
+        updateSettings,
+        startNextRound,
+        revealWordHint,
+        submitGuess,
+        forceEndGame,
+        tickBotsAndTimers,
+        getLeaderboard,
+        getHistory
+      };
+    })();
+
+    /* =========================================================================
+       4. CLIENT APPLICATION STATE & UI HELPERS
+       ========================================================================= */
+    const ClientState = (() => {
+      let playerId = '';
+      let playerName = '';
+      try {
+        playerId = localStorage.getItem('kanduhidi_pid') || ('p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6));
+        playerName = localStorage.getItem('kanduhidi_pname') || 'Explorer';
+        localStorage.setItem('kanduhidi_pid', playerId);
+        localStorage.setItem('kanduhidi_pname', playerName);
+      } catch (e) {
+        playerId = 'p_' + Math.random().toString(36).slice(2, 9);
+        playerName = 'Explorer';
+      }
+
+      return {
+        view: 'home', // home | solo-setup | create-room | join-room | lobby | arena | leaderboard | how-to-play
+        activeRoomId: null,
+        leaderboardTab: 'all', // all | solo | multiplayer | history
+        player: { id: playerId, name: playerName },
+        setPlayerName(name) {
+          const clean = (name || '').trim().slice(0, 20) || 'Explorer';
+          this.player.name = clean;
+          try { localStorage.setItem('kanduhidi_pname', clean); } catch (e) {}
+          document.getElementById('header-player-name').textContent = clean;
+        }
+      };
+    })();
+
+    let tickInterval = null;
+    let autoNextTimeout = null;
+    let lastRoundStatus = null;
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        info: 'border-cyan-400/50 bg-slate-900/95 text-cyan-100',
+        success: 'border-emerald-400/60 bg-emerald-950/95 text-emerald-100',
+        error: 'border-rose-400/60 bg-rose-950/95 text-rose-100',
+        warn: 'border-amber-400/60 bg-amber-950/95 text-amber-100'
+      };
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-sm font-medium animate-pop flex items-center justify-between gap-3 ${colors[type] || colors.info}`;
+      el.innerHTML = `<span>${escapeHtml(msg)}</span>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-6px)';
+        el.style.transition = 'all 0.25s ease';
+        setTimeout(() => el.remove(), 260);
+      }, 3000);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showToast(`Copied "${text}" to clipboard!`, 'success')).catch(() => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast(`Copied "${text}"!`, 'success'); } catch (e) { showToast('Copy failed.', 'error'); }
+      ta.remove();
+    }
+
+    function openModal(html) {
+      const backdrop = document.getElementById('modal-backdrop');
+      const content = document.getElementById('modal-content');
+      content.innerHTML = html;
+      backdrop.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeModal() {
+      document.getElementById('modal-backdrop').classList.add('hidden');
+    }
+
+    function navigate(view) {
+      SoundFX.click();
+      document.getElementById('mobile-nav').classList.add('hidden');
+      if (view !== 'arena' && view !== 'lobby') {
+        stopTimers();
+      }
+      ClientState.view = view;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function stopTimers() {
+      if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+      if (autoNextTimeout) { clearTimeout(autoNextTimeout); autoNextTimeout = null; }
+    }
+
+    function startArenaLoop() {
+      stopTimers();
+      tickInterval = setInterval(() => {
+        if (!ClientState.activeRoomId) return;
+        const room = KanduhidiServer.getRoom(ClientState.activeRoomId);
+        if (!room) return;
+        if (room.status === 'playing') {
+          KanduhidiServer.tickBotsAndTimers(ClientState.activeRoomId);
+          updateTimerBadgeOnly();
+        }
+      }, 1000);
+    }
+
+    function updateTimerBadgeOnly() {
+      const el = document.getElementById('arena-timer-val');
+      const wrap = document.getElementById('arena-timer-wrap');
+      if (!el || !ClientState.activeRoomId) return;
+      const room = KanduhidiServer.getRoom(ClientState.activeRoomId);
+      if (!room || room.status !== 'playing') return;
+      const secs = Math.max(0, Math.ceil((room.roundMeta.endsAt - Date.now()) / 1000));
+      el.textContent = `${secs}s`;
+      if (secs <= 10 && secs > 0) {
+        wrap.classList.add('border-rose-500/80', 'text-rose-300', 'animate-urgent');
+        SoundFX.tick();
+      } else {
+        wrap.classList.remove('border-rose-500/80', 'text-rose-300', 'animate-urgent');
+      }
+    }
+
+    function fireConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 90, spread: 75, origin: { y: 0.62 }, colors: ['#22d3ee', '#a855f7', '#fbbf24', '#34d399', '#ec4899'] });
+      }
+    }
+
+    /* =========================================================================
+       5. VIEW RENDERERS
+       ========================================================================= */
+    function renderHome() {
+      const publicCount = KanduhidiServer.listPublicRooms().length;
+      const topEntry = KanduhidiServer.getLeaderboard()[0];
+      return `
+        <section class="relative overflow-hidden rounded-3xl glass p-6 sm:p-10 lg:p-12 mb-8 border border-cyan-500/20">
+          <div class="grid lg:grid-cols-12 gap-8 items-center">
+            <div class="lg:col-span-7 space-y-5">
+              <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-xs font-bold uppercase tracking-wider">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Solo &amp; Real-Time Multiplayer Arena
+              </div>
+              <h1 class="text-4xl sm:text-6xl font-black tracking-tight leading-none">
+                <span class="gradient-text">KANDUHIDI</span>
+              </h1>
+              <p class="text-slate-300 text-base sm:text-lg max-w-xl leading-relaxed">
+                Crack secret numbers and mystery words against the clock. Play solo to sharpen your streak or host custom multiplayer rooms with your own difficulty, rules, and live leaderboards.
+              </p>
+              <div class="flex flex-wrap gap-3 pt-2">
+                <button data-nav="solo-setup" class="btn-primary px-6 py-3.5 rounded-xl font-bold text-white flex items-center gap-2 shadow-lg">
+                  <i data-lucide="play" class="w-4 h-4"></i> Play Solo
+                </button>
+                <button data-nav="create-room" class="btn-secondary px-6 py-3.5 rounded-xl font-bold text-white flex items-center gap-2">
+                  <i data-lucide="plus-circle" class="w-4 h-4 text-cyan-400"></i> Create Room
+                </button>
+                <button data-nav="join-room" class="btn-secondary px-6 py-3.5 rounded-xl font-bold text-white flex items-center gap-2">
+                  <i data-lucide="users" class="w-4 h-4 text-violet-400"></i> Join Room
+                </button>
+              </div>
+            </div>
+
+            <div class="lg:col-span-5 grid grid-cols-2 gap-3.5">
+              <div class="rounded-2xl bg-slate-900/75 border border-slate-700/60 p-4 space-y-1.5">
+                <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center"><i data-lucide="hash" class="w-5 h-5"></i></div>
+                <div class="font-bold text-sm">Number Guessing</div>
+                <p class="text-xs text-slate-400">Custom min/max bounds, Too High / Too Low &amp; heat hints.</p>
+              </div>
+              <div class="rounded-2xl bg-slate-900/75 border border-slate-700/60 p-4 space-y-1.5">
+                <div class="w-9 h-9 rounded-lg bg-violet-500/20 text-violet-300 flex items-center justify-center"><i data-lucide="type" class="w-5 h-5"></i></div>
+                <div class="font-bold text-sm">Word Guessing</div>
+                <p class="text-xs text-slate-400">Category clues, letter tiles &amp; unlockable letter hints.</p>
+              </div>
+              <div class="rounded-2xl bg-slate-900/75 border border-slate-700/60 p-4 space-y-1.5">
+                <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center"><i data-lucide="sliders" class="w-5 h-5"></i></div>
+                <div class="font-bold text-sm">Room Rules</div>
+                <p class="text-xs text-slate-400">${publicCount} live public rooms with isolated settings &amp; scoring.</p>
+              </div>
+              <div class="rounded-2xl bg-slate-900/75 border border-slate-700/60 p-4 space-y-1.5">
+                <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center"><i data-lucide="trophy" class="w-5 h-5"></i></div>
+                <div class="font-bold text-sm">Top Scorer</div>
+                <p class="text-xs text-slate-400">${topEntry ? `${escapeHtml(topEntry.name)} · ${topEntry.score} pts` : 'Be the first champion!'}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5 Core Main Menu Action Cards -->
+        <section class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          ${[
+            { view: 'solo-setup', icon: 'zap', color: 'from-cyan-500 to-blue-600', title: 'Play Solo', desc: 'Instant auto-generated number or word rounds.' },
+            { view: 'create-room', icon: 'shield-plus', color: 'from-violet-500 to-fuchsia-600', title: 'Create Room', desc: 'Host a room with custom rules, password & scoring.' },
+            { view: 'join-room', icon: 'log-in', color: 'from-emerald-500 to-teal-600', title: 'Join Room', desc: 'Enter a Room ID or browse live public rooms.' },
+            { view: 'how-to-play', icon: 'book-open', color: 'from-amber-500 to-orange-600', title: 'How to Play', desc: 'Master hints, speed bonuses & multiplayer rules.' },
+            { view: 'leaderboard', icon: 'award', color: 'from-pink-500 to-rose-600', title: 'Leaderboard', desc: 'Global rankings and your recent match history.' }
+          ].map((c) => `
+            <button data-nav="${c.view}" class="glass rounded-2xl p-5 text-left hover:border-cyan-400/50 hover:-translate-y-1 transition-all group">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center text-white mb-4 shadow-md group-hover:scale-105 transition-transform">
+                <i data-lucide="${c.icon}" class="w-5 h-5"></i>
+              </div>
+              <div class="font-bold text-base mb-1">${c.title}</div>
+              <p class="text-xs text-slate-400 leading-relaxed">${c.desc}</p>
+            </button>
+          `).join('')}
+        </section>
+      `;
+    }
+
+    function renderSoloSetup() {
+      return `
+        <div class="max-w-2xl mx-auto glass rounded-3xl p-6 sm:p-8 animate-pop">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-2xl font-extrabold flex items-center gap-2">
+                <i data-lucide="zap" class="w-6 h-6 text-cyan-400"></i> Solo Mode Setup
+              </h2>
+              <p class="text-sm text-slate-400 mt-1">Play immediately with auto-generated challenges and bonus scoring.</p>
+            </div>
+            <button data-nav="home" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-semibold">Back</button>
+          </div>
+
+          <form id="solo-form" class="space-y-5">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Category</label>
+              <div class="grid grid-cols-3 gap-2.5">
+                ${[
+                  { val: 'number', label: 'Numbers', icon: 'hash' },
+                  { val: 'word', label: 'Words', icon: 'type' },
+                  { val: 'both', label: 'Both', icon: 'shuffle' }
+                ].map((opt, i) => `
+                  <label class="cursor-pointer">
+                    <input type="radio" name="category" value="${opt.val}" ${i === 2 ? 'checked' : ''} class="peer sr-only" />
+                    <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-3 text-center peer-checked:border-cyan-400 peer-checked:bg-cyan-500/15 transition">
+                      <i data-lucide="${opt.icon}" class="w-4 h-4 mx-auto mb-1 text-cyan-300"></i>
+                      <div class="text-sm font-bold">${opt.label}</div>
+                    </div>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Difficulty</label>
+              <div class="grid grid-cols-3 gap-2.5">
+                ${[
+                  { val: 'easy', label: 'Easy', sub: '1–50 · 75s' },
+                  { val: 'medium', label: 'Medium', sub: '1–100 · 60s' },
+                  { val: 'hard', label: 'Hard', sub: '1–250 · 45s' }
+                ].map((d, i) => `
+                  <label class="cursor-pointer">
+                    <input type="radio" name="difficulty" value="${d.val}" ${i === 1 ? 'checked' : ''} class="peer sr-only solo-diff-radio" />
+                    <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-3 text-center peer-checked:border-violet-400 peer-checked:bg-violet-500/15 transition">
+                      <div class="text-sm font-bold">${d.label}</div>
+                      <div class="text-[11px] text-slate-400">${d.sub}</div>
+                    </div>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Rounds</label>
+                <input type="number" name="rounds" min="1" max="10" value="3" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Min Number</label>
+                <input type="number" id="solo-min-num" name="minNum" value="1" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Max Number</label>
+                <input type="number" id="solo-max-num" name="maxNum" value="100" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none" />
+              </div>
+            </div>
+
+            <button type="submit" class="w-full btn-primary py-3.5 rounded-xl font-bold text-white text-base flex items-center justify-center gap-2">
+              <i data-lucide="play" class="w-5 h-5"></i> Start Solo Game
+            </button>
+          </form>
+        </div>
+      `;
+    }
+
+    function renderCreateRoom() {
+      return `
+        <div class="max-w-3xl mx-auto glass rounded-3xl p-6 sm:p-8 animate-pop">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-2xl font-extrabold flex items-center gap-2">
+                <i data-lucide="shield-plus" class="w-6 h-6 text-violet-400"></i> Create Multiplayer Room
+              </h2>
+              <p class="text-sm text-slate-400 mt-1">Every room has its own independent category, difficulty, timer, and scoring rules.</p>
+            </div>
+            <button data-nav="home" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-semibold">Back</button>
+          </div>
+
+          <form id="create-room-form" class="space-y-6">
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Your Display Name</label>
+                <input type="text" name="hostName" value="${escapeHtml(ClientState.player.name)}" required maxlength="20" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Room Name</label>
+                <input type="text" name="roomName" value="${escapeHtml(ClientState.player.name)}'s Arena" required maxlength="32" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none" />
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Category</label>
+                <select name="category" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none">
+                  <option value="number">Number Guessing</option>
+                  <option value="word">Word Guessing</option>
+                  <option value="both" selected>Both (Mixed Rounds)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Difficulty</label>
+                <select id="cr-difficulty" name="difficulty" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none">
+                  <option value="easy">Easy</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Room Visibility</label>
+                <select name="visibility" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none">
+                  <option value="public" selected>Public (Listed)</option>
+                  <option value="private">Private (Code Only)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Min Number</label>
+                <input type="number" id="cr-min" name="minNum" value="1" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 text-sm font-semibold" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Max Number</label>
+                <input type="number" id="cr-max" name="maxNum" value="100" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 text-sm font-semibold" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Rounds</label>
+                <input type="number" name="rounds" min="1" max="10" value="3" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 text-sm font-semibold" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Time / Round (s)</label>
+                <input type="number" id="cr-time" name="timeLimit" min="20" max="180" value="60" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 text-sm font-semibold" />
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Attempt Limit (0 = Unlimited)</label>
+                <input type="number" id="cr-attempts" name="attemptLimit" min="0" max="20" value="8" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Optional Room Password</label>
+                <input type="password" name="password" placeholder="Leave blank for no password" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold" />
+              </div>
+            </div>
+
+            <!-- Room-Specific Scoring Rules -->
+            <div class="rounded-2xl bg-slate-900/60 border border-slate-700/70 p-4 space-y-3">
+              <div class="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                <i data-lucide="trophy" class="w-3.5 h-3.5"></i> Custom Room Scoring Rules
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Correct Base</label>
+                  <input type="number" name="basePoints" value="100" min="10" class="w-full rounded-lg bg-slate-950/70 border border-slate-700 px-2.5 py-1.5 text-sm font-bold text-emerald-300" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Attempt Bonus</label>
+                  <input type="number" name="attemptBonus" value="15" min="0" class="w-full rounded-lg bg-slate-950/70 border border-slate-700 px-2.5 py-1.5 text-sm font-bold text-cyan-300" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Speed / Sec</label>
+                  <input type="number" name="timeBonusPerSec" value="2" min="0" class="w-full rounded-lg bg-slate-950/70 border border-slate-700 px-2.5 py-1.5 text-sm font-bold text-violet-300" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Wrong Penalty</label>
+                  <input type="number" name="wrongPenalty" value="0" min="0" class="w-full rounded-lg bg-slate-950/70 border border-slate-700 px-2.5 py-1.5 text-sm font-bold text-rose-300" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Participation</label>
+                  <input type="number" name="participation" value="10" min="0" class="w-full rounded-lg bg-slate-950/70 border border-slate-700 px-2.5 py-1.5 text-sm font-bold text-amber-300" />
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-5 text-sm">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="showWordCategory" checked class="w-4 h-4 accent-cyan-400" />
+                <span class="text-slate-300">Show word category clue</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="allowLetterHints" checked class="w-4 h-4 accent-cyan-400" />
+                <span class="text-slate-300">Allow letter reveal hints</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="autoNextRound" class="w-4 h-4 accent-cyan-400" />
+                <span class="text-slate-300">Auto-start next round</span>
+              </label>
+            </div>
+
+            <button type="submit" class="w-full btn-primary py-3.5 rounded-xl font-bold text-white text-base flex items-center justify-center gap-2">
+              <i data-lucide="rocket" class="w-5 h-5"></i> Create Room &amp; Open Lobby
+            </button>
+          </form>
+        </div>
+      `;
+    }
+
+    function renderJoinRoom() {
+      const publicRooms = KanduhidiServer.listPublicRooms();
+      return `
+        <div class="grid lg:grid-cols-12 gap-6 animate-pop">
+          <!-- Join by Room Code -->
+          <div class="lg:col-span-5 glass rounded-3xl p-6 h-fit">
+            <div class="flex items-center justify-between mb-5">
+              <h2 class="text-xl font-extrabold flex items-center gap-2">
+                <i data-lucide="log-in" class="w-5 h-5 text-emerald-400"></i> Join by Room ID
+              </h2>
+              <button data-nav="home" class="btn-secondary px-3 py-1 rounded-lg text-xs font-semibold">Back</button>
+            </div>
+            <form id="join-room-form" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Display Name</label>
+                <input type="text" name="playerName" value="${escapeHtml(ClientState.player.name)}" required maxlength="20" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Room Code</label>
+                <input type="text" name="roomId" placeholder="e.g. NUM101" required maxlength="10" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-bold uppercase tracking-widest focus:border-cyan-400 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password (if required)</label>
+                <input type="password" name="password" placeholder="Optional" class="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold focus:border-cyan-400 focus:outline-none" />
+              </div>
+              <button type="submit" class="w-full btn-primary py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2">
+                <i data-lucide="arrow-right" class="w-4 h-4"></i> Join Room
+              </button>
+            </form>
+            <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+              Tip: Open KANDUHIDI in a second browser tab and enter the same Room Code to test real-time multi-tab synchronization!
+            </p>
+          </div>
+
+          <!-- Live Public Rooms Directory -->
+          <div class="lg:col-span-7 glass rounded-3xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-xl font-extrabold">Live Public Rooms</h2>
+                <p class="text-xs text-slate-400">Each room runs its own independent category, difficulty, and scoring rules.</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-bold">${publicRooms.length} Active</span>
+            </div>
+
+            <div class="space-y-3">
+              ${publicRooms.length === 0 ? `<div class="text-center py-10 text-slate-400 text-sm">No public rooms yet. Create one to get started!</div>` : publicRooms.map((r) => `
+                <div class="rounded-2xl bg-slate-900/70 border border-slate-700/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-cyan-400/40 transition">
+                  <div class="space-y-1.5">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-bold text-base">${escapeHtml(r.name)}</span>
+                      <span class="px-2 py-0.5 rounded-md bg-slate-800 text-cyan-300 font-mono text-xs font-bold">${escapeHtml(r.id)}</span>
+                      ${r.password ? `<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[11px] font-semibold">Protected</span>` : ''}
+                    </div>
+                    <div class="flex flex-wrap gap-2 text-xs text-slate-300">
+                      <span class="px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-200 capitalize">${escapeHtml(r.settings.category)}</span>
+                      <span class="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 capitalize">${escapeHtml(r.settings.difficulty)}</span>
+                      <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">${r.settings.rounds} rounds · ${r.settings.timeLimit}s</span>
+                      <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">${r.players.length}/8 players</span>
+                    </div>
+                  </div>
+                  <button data-quick-join="${escapeHtml(r.id)}" data-has-pass="${r.password ? '1' : '0'}" class="btn-primary px-4 py-2 rounded-xl text-sm font-bold text-white shrink-0">
+                    Join Room
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLobby(room) {
+      const isHost = room.hostId === ClientState.player.id;
+      return `
+        <div class="grid lg:grid-cols-12 gap-6 animate-pop">
+          <!-- Lobby Header & Players -->
+          <div class="lg:col-span-7 space-y-5">
+            <div class="glass rounded-3xl p-6">
+              <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+                <div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-cyan-400">Waiting Lobby</div>
+                  <h2 class="text-2xl font-black mt-0.5">${escapeHtml(room.name)}</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="px-3.5 py-2 rounded-xl bg-slate-900 border border-cyan-500/40 font-mono font-black text-lg tracking-widest text-cyan-300">${escapeHtml(room.id)}</div>
+                  <button id="copy-room-code-btn" class="btn-secondary p-2.5 rounded-xl" title="Copy Room Code">
+                    <i data-lucide="copy" class="w-4 h-4 text-cyan-300"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">Players (${room.players.length}/8)</h3>
+                ${isHost ? `
+                  <button id="add-bot-btn" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                    <i data-lucide="bot" class="w-3.5 h-3.5"></i> Add AI Opponent
+                  </button>
+                ` : ''}
+              </div>
+
+              <div class="grid sm:grid-cols-2 gap-2.5 mb-6">
+                ${room.players.map((p) => `
+                  <div class="rounded-xl bg-slate-900/75 border border-slate-700/70 px-3.5 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-lg ${p.isHost ? 'bg-amber-500/20 text-amber-300' : p.isBot ? 'bg-violet-500/20 text-violet-300' : 'bg-cyan-500/20 text-cyan-300'} flex items-center justify-center font-bold text-sm shrink-0">
+                        ${escapeHtml(p.name.charAt(0).toUpperCase())}
+                      </div>
+                      <div class="truncate">
+                        <div class="font-bold text-sm truncate">${escapeHtml(p.name)} ${p.id === ClientState.player.id ? '<span class="text-cyan-400 text-xs">(You)</span>' : ''}</div>
+                        <div class="text-[11px] text-slate-400">${p.isHost ? 'Host' : p.isBot ? 'AI Opponent' : 'Ready'}</div>
+                      </div>
+                    </div>
+                    ${isHost && p.id !== ClientState.player.id ? `
+                      <button data-kick-id="${escapeHtml(p.id)}" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10" title="Remove">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+
+              <div class="flex flex-wrap items-center gap-3">
+                ${isHost ? `
+                  <button id="start-game-btn" class="btn-primary px-6 py-3 rounded-xl font-bold text-white flex items-center gap-2 flex-1 justify-center">
+                    <i data-lucide="play" class="w-4 h-4"></i> Start Multiplayer Game
+                  </button>
+                  <button id="edit-room-settings-btn" class="btn-secondary px-4 py-3 rounded-xl font-semibold text-sm flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-violet-300"></i> Edit Rules
+                  </button>
+                ` : `
+                  <div class="flex-1 text-center py-3 rounded-xl bg-slate-900/60 border border-slate-700 text-sm text-slate-300 font-medium">
+                    Waiting for Host to start the game…
+                  </div>
+                `}
+                <button id="leave-room-btn" class="px-4 py-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 hover:bg-rose-500/25 font-semibold text-sm">
+                  Leave
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Room Configuration Summary -->
+          <div class="lg:col-span-5 glass rounded-3xl p-6 space-y-4">
+            <h3 class="text-base font-extrabold flex items-center gap-2">
+              <i data-lucide="settings" class="w-4 h-4 text-cyan-400"></i> Room Rules &amp; Scoring
+            </h3>
+            <div class="grid grid-cols-2 gap-2.5 text-sm">
+              <div class="rounded-xl bg-slate-900/70 p-3 border border-slate-800">
+                <div class="text-[11px] text-slate-400 uppercase">Category</div>
+                <div class="font-bold capitalize text-cyan-300">${escapeHtml(room.settings.category)}</div>
+              </div>
+              <div class="rounded-xl bg-slate-900/70 p-3 border border-slate-800">
+                <div class="text-[11px] text-slate-400 uppercase">Difficulty</div>
+                <div class="font-bold capitalize text-violet-300">${escapeHtml(room.settings.difficulty)}</div>
+              </div>
+              <div class="rounded-xl bg-slate-900/70 p-3 border border-slate-800">
+                <div class="text-[11px] text-slate-400 uppercase">Number Range</div>
+                <div class="font-bold">${room.settings.minNum} – ${room.settings.maxNum}</div>
+              </div>
+              <div class="rounded-xl bg-slate-900/70 p-3 border border-slate-800">
+                <div class="text-[11px] text-slate-400 uppercase">Rounds &amp; Timer</div>
+                <div class="font-bold">${room.settings.rounds} rounds · ${room.settings.timeLimit}s</div>
+              </div>
+              <div class="rounded-xl bg-slate-900/70 p-3 border border-slate-800">
+                <div class="text-[11px] text-slate-400 uppercase">Attempt Limit</div>
+                <div class="font-bold">${room.settings.attemptLimit === 0 ? 'Unlimited' : room.settings.attemptLimit + ' tries'}</div>
+              </div>
+              <div class="rounded-xl bg-slate-900/70 p-3 border border-slate-800">
+                <div class="text-[11px] text-slate-400 uppercase">Visibility</div>
+                <div class="font-bold">${room.isPublic ? 'Public' : 'Private'}${room.password ? ' · Locked' : ''}</div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl bg-slate-900/70 p-4 border border-slate-800 space-y-1.5 text-xs">
+              <div class="font-bold text-amber-300 uppercase tracking-wider mb-1">Scoring Formula</div>
+              <div class="flex justify-between"><span class="text-slate-400">Correct Guess Base</span><span class="font-bold text-emerald-300">+${room.settings.scoring.basePoints} pts</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Unused Attempt Bonus</span><span class="font-bold text-cyan-300">+${room.settings.scoring.attemptBonus} / attempt</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Speed Bonus</span><span class="font-bold text-violet-300">+${room.settings.scoring.timeBonusPerSec} / sec left</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Wrong Guess Penalty</span><span class="font-bold text-rose-300">-${room.settings.scoring.wrongPenalty} pts</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Participation</span><span class="font-bold text-amber-300">+${room.settings.scoring.participation} pts</span></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderArena(room) {
+      const me = room.players.find((p) => p.id === ClientState.player.id) || room.players[0];
+      const isHost = room.hostId === ClientState.player.id;
+      const ch = room.challenge;
+      const secsLeft = room.status === 'playing' ? Math.max(0, Math.ceil((room.roundMeta.endsAt - Date.now()) / 1000)) : 0;
+      const attemptLimit = room.settings.attemptLimit;
+      const outOfAttempts = attemptLimit > 0 && me.attemptsThisRound >= attemptLimit;
+      const canSubmit = room.status === 'playing' && !me.solvedThisRound && !outOfAttempts;
+
+      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score || b.wins - a.wins);
+
+      // Compute range fill bar for Number Guessing
+      let rangeBarHtml = '';
+      if (ch && ch.type === 'number') {
+        const span = Math.max(1, ch.max - ch.min);
+        const leftPct = Math.max(0, Math.min(100, ((ch.narrowMin - ch.min) / span) * 100));
+        const rightPct = Math.max(0, Math.min(100, ((ch.max - ch.narrowMax) / span) * 100));
+        rangeBarHtml = `
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-bold text-slate-400">
+              <span>Min: ${ch.min}</span>
+              <span class="text-cyan-300">Active Range: ${ch.narrowMin} – ${ch.narrowMax}</span>
+              <span>Max: ${ch.max}</span>
+            </div>
+            <div class="h-3 rounded-full bg-slate-900 border border-slate-700 overflow-hidden relative">
+              <div class="absolute top-0 bottom-0 bg-gradient-to-r from-cyan-400 via-violet-500 to-pink-500 rounded-full transition-all duration-300" style="left:${leftPct}%; right:${rightPct}%"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Word tiles display
+      let wordTilesHtml = '';
+      if (ch && ch.type === 'word') {
+        wordTilesHtml = `
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center justify-center gap-2 text-xs">
+              <span class="px-3 py-1 rounded-full bg-violet-500/20 border border-violet-400/30 text-violet-200 font-bold">Category: ${escapeHtml(ch.category)}</span>
+              <span class="px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 font-bold">${ch.length} Letters</span>
+              ${room.settings.allowLetterHints && room.status === 'playing' ? `
+                <button id="reveal-hint-btn" class="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 hover:bg-amber-500/30 font-bold flex items-center gap-1 transition">
+                  <i data-lucide="lightbulb" class="w-3.5 h-3.5"></i> Reveal Letter
+                </button>
+              ` : ''}
+            </div>
+            <div class="flex flex-wrap justify-center gap-2 py-2">
+              ${ch.masked.map((ltr) => `
+                <div class="w-10 h-12 sm:w-12 sm:h-14 rounded-xl border-2 ${ltr === '_' ? 'border-slate-600 bg-slate-900/80 text-slate-500' : 'border-cyan-400 bg-cyan-500/15 text-cyan-200'} flex items-center justify-center text-xl sm:text-2xl font-black tracking-wider shadow-inner">
+                  ${ltr === '_' ? '•' : escapeHtml(ltr)}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Round Over / Match Finished Banner
+      let statusBannerHtml = '';
+      if (room.status === 'round_over' || room.status === 'finished') {
+        const isFinal = room.status === 'finished';
+        const champion = sortedPlayers[0];
+        statusBannerHtml = `
+          <div class="rounded-2xl bg-gradient-to-br from-violet-900/60 via-slate-900/90 to-cyan-900/60 border border-cyan-400/40 p-5 text-center space-y-3 animate-pop">
+            <div class="text-xs font-extrabold uppercase tracking-widest ${isFinal ? 'text-amber-300' : 'text-cyan-300'}">
+              ${isFinal ? 'Match Complete!' : `Round ${room.currentRound} Complete`}
+            </div>
+            <div class="text-xl sm:text-2xl font-black">
+              ${room.roundMeta.winnerName ? `${escapeHtml(room.roundMeta.winnerName)} nailed it!` : escapeHtml(room.roundMeta.endReason || 'Round Ended')}
+            </div>
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-950/80 border border-emerald-400/40 text-sm">
+              <span class="text-slate-400">Secret Answer:</span>
+              <span class="font-black text-emerald-300 tracking-wider text-base">${escapeHtml(ch?.revealedAnswer ?? '—')}</span>
+            </div>
+            ${room.roundMeta.lastBreakdown && room.roundMeta.winnerId ? `
+              <div class="text-xs text-slate-300">
+                Points Breakdown: Base +${room.roundMeta.lastBreakdown.base} · Attempts +${room.roundMeta.lastBreakdown.attemptBonus} · Speed +${room.roundMeta.lastBreakdown.timeBonus} = <strong class="text-amber-300">+${room.roundMeta.lastBreakdown.total} pts</strong>
+              </div>
+            ` : ''}
+            ${isFinal && champion ? `
+              <div class="text-sm font-bold text-amber-300 pt-1">
+                Champion: ${escapeHtml(champion.name)} with ${champion.score} points (${champion.wins} wins)
+              </div>
+            ` : ''}
+            <div class="flex flex-wrap justify-center gap-3 pt-2">
+              ${isHost || room.isSolo ? `
+                <button id="next-round-btn" class="btn-primary px-6 py-2.5 rounded-xl font-bold text-white text-sm flex items-center gap-2">
+                  <i data-lucide="${isFinal ? 'rotate-ccw' : 'arrow-right'}" class="w-4 h-4"></i>
+                  ${isFinal ? 'Play Again' : `Start Round ${room.currentRound + 1}`}
+                </button>
+              ` : `<span class="text-xs text-slate-400">Waiting for host to start the next round…</span>`}
+              <button id="arena-exit-btn" class="btn-secondary px-4 py-2.5 rounded-xl font-semibold text-sm">Exit to Menu</button>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="space-y-5 animate-pop">
+          <!-- Top Status Strip -->
+          <div class="glass rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <span class="font-black gradient-text text-base">KANDUHIDI</span>
+              ${!room.isSolo ? `<span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-cyan-500/30 font-mono text-xs font-bold text-cyan-300">Room: ${escapeHtml(room.id)}</span>` : `<span class="px-2.5 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 text-xs font-bold">SOLO MODE</span>`}
+              <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-xs font-bold">Round ${room.currentRound}/${room.settings.rounds}</span>
+              <span class="px-2.5 py-1 rounded-lg bg-violet-500/20 text-violet-200 text-xs font-bold capitalize">${ch?.type === 'number' ? 'Number' : 'Word'} · ${escapeHtml(room.settings.difficulty)}</span>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+              <div id="arena-timer-wrap" class="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 font-mono font-extrabold text-sm flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-4 h-4 text-cyan-400"></i>
+                <span id="arena-timer-val">${secsLeft}s</span>
+              </div>
+              <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold">
+                Score: <span class="text-amber-300">${me.score}</span>
+              </div>
+              <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold">
+                Attempts: <span class="text-cyan-300">${me.attemptsThisRound}${attemptLimit > 0 ? '/' + attemptLimit : ''}</span>
+              </div>
+              ${isHost && !room.isSolo && room.status === 'playing' ? `
+                <button id="host-end-btn" class="px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-bold hover:bg-rose-500/25">End</button>
+              ` : ''}
+              <button id="leave-room-btn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Leave</button>
+            </div>
+          </div>
+
+          <div class="grid lg:grid-cols-12 gap-5">
+            <!-- Left / Center: Challenge + Guess Input + Live Feed -->
+            <div class="lg:col-span-8 space-y-5">
+              <div class="glass rounded-3xl p-5 sm:p-7 space-y-5">
+                <div class="text-center">
+                  <h2 class="text-xl sm:text-2xl font-extrabold">
+                    ${ch?.type === 'number' ? `Guess the Secret Number (${ch.min} – ${ch.max})` : 'Guess the Secret Word'}
+                  </h2>
+                  ${me.lastFeedback ? `<div id="feedback-pill" class="inline-block mt-2 px-3.5 py-1 rounded-full bg-slate-900/90 border border-cyan-500/30 text-xs font-bold text-cyan-200">${escapeHtml(me.lastFeedback)}</div>` : ''}
+                </div>
+
+                ${rangeBarHtml}
+                ${wordTilesHtml}
+                ${statusBannerHtml}
+
+                <!-- Individual Guess Input -->
+                <form id="guess-form" class="flex flex-col sm:flex-row gap-2.5">
+                  <input
+                    id="guess-input"
+                    type="${ch?.type === 'number' ? 'number' : 'text'}"
+                    ${ch?.type === 'number' ? `min="${ch.min}" max="${ch.max}"` : `maxlength="20" autocomplete="off"`}
+                    placeholder="${canSubmit ? (ch?.type === 'number' ? `Enter a number (${ch.narrowMin}–${ch.narrowMax})…` : `Type your ${ch?.length}-letter word…`) : (outOfAttempts ? 'No attempts left this round' : 'Round ended')}"
+                    ${canSubmit ? '' : 'disabled'}
+                    class="flex-1 rounded-xl bg-slate-900/90 border border-slate-600 px-4 py-3.5 text-base font-bold tracking-wide focus:border-cyan-400 focus:outline-none disabled:opacity-50"
+                  />
+                  <button type="submit" ${canSubmit ? '' : 'disabled'} class="btn-primary px-6 py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 shrink-0">
+                    <i data-lucide="send" class="w-4 h-4"></i> Submit Guess
+                  </button>
+                </form>
+              </div>
+
+              <!-- Synchronized Live Guess Feed -->
+              <div class="glass rounded-3xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i> Live Activity &amp; Guesses
+                  </h3>
+                  <span class="text-xs text-slate-500">${room.feed.length} events</span>
+                </div>
+                <div id="live-feed-list" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  ${[...room.feed].reverse().map((item) => {
+                    if (item.system) {
+                      return `<div class="text-xs text-slate-400 px-3 py-1.5 rounded-lg bg-slate-900/50 border border-slate-800/80">${escapeHtml(item.text)}</div>`;
+                    }
+                    const badgeColor = item.outcome === 'correct'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : item.outcome === 'too_high'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : item.outcome === 'too_low'
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+                    const tilesMarkup = item.tiles ? `
+                      <div class="flex gap-1 mt-1.5 flex-wrap">
+                        ${item.tiles.map((t) => `
+                          <span class="w-6 h-6 rounded text-xs font-black flex items-center justify-center ${
+                            t.status === 'exact' ? 'bg-emerald-500 text-slate-950' :
+                            t.status === 'present' ? 'bg-amber-400 text-slate-950' :
+                            'bg-slate-800 text-slate-400'
+                          }">${escapeHtml(t.char)}</span>
+                        `).join('')}
+                      </div>
+                    ` : '';
+                    return `
+                      <div class="rounded-xl bg-slate-900/75 border border-slate-800 px-3.5 py-2.5 flex items-start justify-between gap-3">
+                        <div>
+                          <div class="text-sm">
+                            <span class="font-bold text-slate-200">${escapeHtml(item.playerName)}</span>
+                            <span class="text-slate-400 mx-1">guessed</span>
+                            <span class="font-mono font-extrabold text-white">${escapeHtml(item.guess)}</span>
+                          </div>
+                          ${tilesMarkup}
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full border text-[11px] font-bold shrink-0 ${badgeColor}">${escapeHtml(item.hint)}</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Live Scoreboard -->
+            <div class="lg:col-span-4 space-y-5">
+              <div class="glass rounded-3xl p-5">
+                <h3 class="text-sm font-extrabold uppercase tracking-wider text-amber-300 flex items-center gap-2 mb-4">
+                  <i data-lucide="trophy" class="w-4 h-4"></i> Live Scoreboard
+                </h3>
+                <div class="space-y-2.5">
+                  ${sortedPlayers.map((p, idx) => `
+                    <div class="rounded-2xl p-3.5 border ${p.id === ClientState.player.id ? 'bg-cyan-500/10 border-cyan-400/50' : 'bg-slate-900/70 border-slate-800'} flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${
+                          idx === 0 ? 'bg-amber-400 text-slate-950' :
+                          idx === 1 ? 'bg-slate-300 text-slate-950' :
+                          idx === 2 ? 'bg-amber-700 text-white' :
+                          'bg-slate-800 text-slate-400'
+                        }">#${idx + 1}</div>
+                        <div class="min-w-0">
+                          <div class="font-bold text-sm truncate">
+                            ${escapeHtml(p.name)}
+                            ${p.isHost && !room.isSolo ? '<span class="text-[10px] text-amber-300 ml-1">HOST</span>' : ''}
+                          </div>
+                          <div class="text-[11px] text-slate-400">
+                            ${p.wins}W · ${p.roundsPlayed}R · ${p.attemptsThisRound} tries
+                          </div>
+                        </div>
+                      </div>
+                      <div class="text-right shrink-0">
+                        <div class="font-black text-base text-amber-300">${p.score}</div>
+                        <div class="text-[10px] text-slate-500 uppercase">pts</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeaderboard() {
+      const tab = ClientState.leaderboardTab;
+      const all = KanduhidiServer.getLeaderboard();
+      const filtered = tab === 'all' ? all : all.filter((e) => e.mode === tab);
+      const history = KanduhidiServer.getHistory();
+
+      return `
+        <div class="max-w-4xl mx-auto glass rounded-3xl p-6 sm:p-8 animate-pop space-y-6">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-2xl font-extrabold flex items-center gap-2">
+                <i data-lucide="award" class="w-6 h-6 text-amber-400"></i> Global Leaderboard &amp; History
+              </h2>
+              <p class="text-sm text-slate-400 mt-1">Track top scores across Solo and Multiplayer rooms.</p>
+            </div>
+            <button data-nav="home" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-semibold">Back</button>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            ${[
+              { id: 'all', label: 'All Modes' },
+              { id: 'solo', label: 'Solo' },
+              { id: 'multiplayer', label: 'Multiplayer' },
+              { id: 'history', label: `Game History (${history.length})` }
+            ].map((t) => `
+              <button data-lb-tab="${t.id}" class="px-4 py-2 rounded-xl text-xs font-bold transition ${tab === t.id ? 'bg-cyan-500 text-slate-950' : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800'}">
+                ${t.label}
+              </button>
+            `).join('')}
+          </div>
+
+          ${tab === 'history' ? `
+            <div class="space-y-2.5">
+              ${history.length === 0 ? `<div class="text-center py-12 text-slate-400 text-sm">No completed games yet. Finish a Solo or Multiplayer match to log history!</div>` : history.map((h) => `
+                <div class="rounded-2xl bg-slate-900/70 border border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div class="font-bold text-sm flex items-center gap-2">
+                      <span>${escapeHtml(h.roomName)}</span>
+                      <span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[11px]">${escapeHtml(h.roomId)}</span>
+                      <span class="px-2 py-0.5 rounded bg-violet-500/20 text-violet-200 text-[11px] capitalize">${escapeHtml(h.category)} · ${escapeHtml(h.difficulty)}</span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-1">${h.rounds} rounds · ${h.playersCount} player(s) · ${new Date(h.ts).toLocaleString()}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-xs text-slate-400">Winner</div>
+                    <div class="font-extrabold text-amber-300 text-sm">${escapeHtml(h.winner)} (${h.topScore} pts)</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-700/70 text-[11px] uppercase tracking-wider text-slate-400">
+                    <th class="py-3 px-3">Rank</th>
+                    <th class="py-3 px-3">Player</th>
+                    <th class="py-3 px-3">Mode</th>
+                    <th class="py-3 px-3 text-right">Wins</th>
+                    <th class="py-3 px-3 text-right">Rounds</th>
+                    <th class="py-3 px-3 text-right">Total Points</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80 text-sm">
+                  ${filtered.length === 0 ? `<tr><td colspan="6" class="py-10 text-center text-slate-400">No entries for this mode yet.</td></tr>` : filtered.map((e, idx) => `
+                    <tr class="hover:bg-white/5 transition">
+                      <td class="py-3 px-3 font-black ${idx === 0 ? 'text-amber-300' : idx === 1 ? 'text-slate-300' : idx === 2 ? 'text-amber-600' : 'text-slate-500'}">#${idx + 1}</td>
+                      <td class="py-3 px-3 font-bold">${escapeHtml(e.name)}</td>
+                      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${e.mode === 'solo' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-violet-500/20 text-violet-300'}">${escapeHtml(e.mode)}</span></td>
+                      <td class="py-3 px-3 text-right text-slate-300">${e.wins}</td>
+                      <td class="py-3 px-3 text-right text-slate-300">${e.rounds}</td>
+                      <td class="py-3 px-3 text-right font-black text-amber-300">${e.score}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function renderHowToPlay() {
+      return `
+        <div class="max-w-4xl mx-auto glass rounded-3xl p-6 sm:p-8 animate-pop space-y-6">
+          <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-extrabold flex items-center gap-2">
+              <i data-lucide="book-open" class="w-6 h-6 text-amber-400"></i> How to Play KANDUHIDI
+            </h2>
+            <button data-nav="home" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-semibold">Back</button>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div class="rounded-2xl bg-slate-900/70 border border-slate-800 p-5 space-y-2">
+              <div class="font-bold text-cyan-300 flex items-center gap-2"><i data-lucide="hash" class="w-4 h-4"></i> Number Guessing</div>
+              <p class="text-sm text-slate-300 leading-relaxed">A secret number is generated within the room's min–max range. After each guess, you receive <strong>Too High</strong> or <strong>Too Low</strong> plus a heat clue (Cold, Warm, Boiling Hot) while the active range bar narrows down.</p>
+            </div>
+            <div class="rounded-2xl bg-slate-900/70 border border-slate-800 p-5 space-y-2">
+              <div class="font-bold text-violet-300 flex items-center gap-2"><i data-lucide="type" class="w-4 h-4"></i> Word Guessing</div>
+              <p class="text-sm text-slate-300 leading-relaxed">Guess the secret word using its category and letter count. Submitted words show color-coded tiles: <span class="text-emerald-300 font-bold">Green</span> = right spot, <span class="text-amber-300 font-bold">Amber</span> = in word, wrong spot. Use <strong>Reveal Letter</strong> for extra help.</p>
+            </div>
+            <div class="rounded-2xl bg-slate-900/70 border border-slate-800 p-5 space-y-2">
+              <div class="font-bold text-emerald-300 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Multiplayer Rooms</div>
+              <p class="text-sm text-slate-300 leading-relaxed">Create a public or private room (with optional password) and share the 6-character Room Code. Only the host can edit room rules, add AI opponents, or start rounds. Changes in one room never affect other rooms.</p>
+            </div>
+            <div class="rounded-2xl bg-slate-900/70 border border-slate-800 p-5 space-y-2">
+              <div class="font-bold text-amber-300 flex items-center gap-2"><i data-lucide="trophy" class="w-4 h-4"></i> Points &amp; Bonuses</div>
+              <p class="text-sm text-slate-300 leading-relaxed">Earn base points for a correct guess, plus bonus points for unused attempts and remaining seconds. Hosts can also configure wrong-guess penalties and participation points per room.</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-3 pt-2">
+            <button data-nav="solo-setup" class="btn-primary px-5 py-2.5 rounded-xl font-bold text-sm">Try Solo Mode</button>
+            <button data-nav="create-room" class="btn-secondary px-5 py-2.5 rounded-xl font-bold text-sm">Create a Room</button>
+          </div>
+        </div>
+      `;
+    }
+
+    /* =========================================================================
+       6. MASTER RENDER & EVENT BINDING
+       ========================================================================= */
+    function render() {
+      const root = document.getElementById('app-root');
+      let html = '';
+
+      if (ClientState.view === 'home') html = renderHome();
+      else if (ClientState.view === 'solo-setup') html = renderSoloSetup();
+      else if (ClientState.view === 'create-room') html = renderCreateRoom();
+      else if (ClientState.view === 'join-room') html = renderJoinRoom();
+      else if (ClientState.view === 'leaderboard') html = renderLeaderboard();
+      else if (ClientState.view === 'how-to-play') html = renderHowToPlay();
+      else if (ClientState.view === 'lobby' || ClientState.view === 'arena') {
+        const room = KanduhidiServer.getRoom(ClientState.activeRoomId);
+        if (!room) {
+          ClientState.activeRoomId = null;
+          ClientState.view = 'home';
+          html = renderHome();
+        } else if (room.status === 'lobby') {
+          ClientState.view = 'lobby';
+          html = renderLobby(room);
+        } else {
+          ClientState.view = 'arena';
+          html = renderArena(room);
+          handleRoundTransitions(room);
+        }
+      }
+
+      root.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+      bindViewEvents();
+      updateSoundIcon();
+    }
+
+    function handleRoundTransitions(room) {
+      if (room.status !== lastRoundStatus) {
+        if (room.status === 'round_over' || room.status === 'finished') {
+          if (room.roundMeta.winnerId === ClientState.player.id) {
+            SoundFX.win();
+            fireConfetti();
+          } else {
+            SoundFX.roundEnd();
+          }
+
+          // Auto-advance if configured and not final round
+          if (room.status === 'round_over' && room.settings.autoNextRound && (room.hostId === ClientState.player.id || room.isSolo)) {
+            if (autoNextTimeout) clearTimeout(autoNextTimeout);
+            autoNextTimeout = setTimeout(() => {
+              const latest = KanduhidiServer.getRoom(room.id);
+              if (latest && latest.status === 'round_over') {
+                KanduhidiServer.startNextRound(room.id, ClientState.player.id, true);
+              }
+            }, 4000);
+          }
+        }
+        lastRoundStatus = room.status;
+      }
+    }
+
+    function bindViewEvents() {
+      // Navigation buttons inside main view
+      document.querySelectorAll('#app-root [data-nav]').forEach((btn) => {
+        btn.addEventListener('click', () => navigate(btn.getAttribute('data-nav')));
+      });
+
+      // Solo form
+      const soloForm = document.getElementById('solo-form');
+      if (soloForm) {
+        soloForm.querySelectorAll('.solo-diff-radio').forEach((r) => {
+          r.addEventListener('change', (e) => {
+            const p = DIFFICULTY_PRESETS[e.target.value];
+            if (p) {
+              document.getElementById('solo-min-num').value = p.minNum;
+              document.getElementById('solo-max-num').value = p.maxNum;
+            }
+          });
+        });
+        soloForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const fd = new FormData(soloForm);
+          const diff = fd.get('difficulty');
+          const preset = DIFFICULTY_PRESETS[diff] || DIFFICULTY_PRESETS.medium;
+          const room = KanduhidiServer.createSoloSession(ClientState.player, {
+            category: fd.get('category'),
+            difficulty: diff,
+            rounds: Number(fd.get('rounds')),
+            minNum: Number(fd.get('minNum')),
+            maxNum: Number(fd.get('maxNum')),
+            timeLimit: preset.timeLimit,
+            attemptLimit: preset.attemptLimit
+          });
+          ClientState.activeRoomId = room.id;
+          ClientState.view = 'arena';
+          lastRoundStatus = 'playing';
+          SoundFX.join();
+          startArenaLoop();
+          render();
+        });
+      }
+
+      // Create Room form
+      const createForm = document.getElementById('create-room-form');
+      if (createForm) {
+        const diffSel = document.getElementById('cr-difficulty');
+        if (diffSel) {
+          diffSel.addEventListener('change', (e) => {
+            const p = DIFFICULTY_PRESETS[e.target.value];
+            if (p) {
+              document.getElementById('cr-min').value = p.minNum;
+              document.getElementById('cr-max').value = p.maxNum;
+              document.getElementById('cr-time').value = p.timeLimit;
+              document.getElementById('cr-attempts').value = p.attemptLimit;
+            }
+          });
+        }
+        createForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const fd = new FormData(createForm);
+          ClientState.setPlayerName(fd.get('hostName'));
+          const res = KanduhidiServer.createRoom(ClientState.player, {
+            name: fd.get('roomName'),
+            category: fd.get('category'),
+            difficulty: fd.get('difficulty'),
+            isPublic: fd.get('visibility') === 'public',
+            password: fd.get('password'),
+            minNum: Number(fd.get('minNum')),
+            maxNum: Number(fd.get('maxNum')),
+            rounds: Number(fd.get('rounds')),
+            timeLimit: Number(fd.get('timeLimit')),
+            attemptLimit: Number(fd.get('attemptLimit')),
+            showWordCategory: fd.get('showWordCategory') === 'on',
+            allowLetterHints: fd.get('allowLetterHints') === 'on',
+            autoNextRound: fd.get('autoNextRound') === 'on',
+            scoring: {
+              basePoints: Number(fd.get('basePoints')),
+              attemptBonus: Number(fd.get('attemptBonus')),
+              timeBonusPerSec: Number(fd.get('timeBonusPerSec')),
+              wrongPenalty: Number(fd.get('wrongPenalty')),
+              participation: Number(fd.get('participation'))
+            }
+          });
+          if (res.ok) {
+            ClientState.activeRoomId = res.room.id;
+            ClientState.view = 'lobby';
+            SoundFX.join();
+            showToast(`Room ${res.room.id} created!`, 'success');
+            render();
+          }
+        });
+      }
+
+      // Join Room form & quick join buttons
+      const joinForm = document.getElementById('join-room-form');
+      if (joinForm) {
+        joinForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const fd = new FormData(joinForm);
+          ClientState.setPlayerName(fd.get('playerName'));
+          const res = KanduhidiServer.joinRoom(fd.get('roomId'), ClientState.player, fd.get('password'));
+          if (!res.ok) {
+            SoundFX.wrong();
+            showToast(res.error, 'error');
+            return;
+          }
+          ClientState.activeRoomId = res.room.id;
+          ClientState.view = res.room.status === 'lobby' ? 'lobby' : 'arena';
+          if (ClientState.view === 'arena') startArenaLoop();
+          SoundFX.join();
+          showToast(`Joined ${res.room.name}!`, 'success');
+          render();
+        });
+      }
+
+      document.querySelectorAll('[data-quick-join]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-quick-join');
+          const hasPass = btn.getAttribute('data-has-pass') === '1';
+          if (hasPass) {
+            openModal(`
+              <h3 class="text-lg font-extrabold mb-3">Enter Password for ${escapeHtml(id)}</h3>
+              <form id="pw-join-form" class="space-y-3">
+                <input type="password" name="pw" required placeholder="Room password" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-sm" />
+                <div class="flex justify-end gap-2">
+                  <button type="button" id="modal-cancel-btn" class="btn-secondary px-4 py-2 rounded-xl text-xs font-bold">Cancel</button>
+                  <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-xs font-bold text-white">Join</button>
+                </div>
+              </form>
+            `);
+            document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+            document.getElementById('pw-join-form').addEventListener('submit', (e) => {
+              e.preventDefault();
+              const pw = new FormData(e.target).get('pw');
+              const res = KanduhidiServer.joinRoom(id, ClientState.player, pw);
+              if (!res.ok) { showToast(res.error, 'error'); return; }
+              closeModal();
+              ClientState.activeRoomId = res.room.id;
+              ClientState.view = res.room.status === 'lobby' ? 'lobby' : 'arena';
+              if (ClientState.view === 'arena') startArenaLoop();
+              SoundFX.join();
+              render();
+            });
+          } else {
+            const res = KanduhidiServer.joinRoom(id, ClientState.player, '');
+            if (!res.ok) { showToast(res.error, 'error'); return; }
+            ClientState.activeRoomId = res.room.id;
+            ClientState.view = res.room.status === 'lobby' ? 'lobby' : 'arena';
+            if (ClientState.view === 'arena') startArenaLoop();
+            SoundFX.join();
+            showToast(`Joined ${res.room.name}!`, 'success');
+            render();
+          }
+        });
+      });
+
+      // Lobby controls
+      const copyBtn = document.getElementById('copy-room-code-btn');
+      if (copyBtn) copyBtn.addEventListener('click', () => copyText(ClientState.activeRoomId));
+
+      const addBotBtn = document.getElementById('add-bot-btn');
+      if (addBotBtn) {
+        addBotBtn.addEventListener('click', () => {
+          const res = KanduhidiServer.addBotToRoom(ClientState.activeRoomId, ClientState.player.id);
+          if (!res.ok) showToast(res.error, 'error');
+          else SoundFX.join();
+        });
+      }
+
+      document.querySelectorAll('[data-kick-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          KanduhidiServer.removePlayer(ClientState.activeRoomId, ClientState.player.id, btn.getAttribute('data-kick-id'));
+        });
+      });
+
+      const startBtn = document.getElementById('start-game-btn');
+      if (startBtn) {
+        startBtn.addEventListener('click', () => {
+          const res = KanduhidiServer.startNextRound(ClientState.activeRoomId, ClientState.player.id);
+          if (!res.ok) {
+            SoundFX.wrong();
+            showToast(res.error, 'warn');
+          } else {
+            lastRoundStatus = 'playing';
+            startArenaLoop();
+            SoundFX.join();
+          }
+        });
+      }
+
+      const editRulesBtn = document.getElementById('edit-room-settings-btn');
+      if (editRulesBtn) {
+        editRulesBtn.addEventListener('click', () => openEditRulesModal());
+      }
+
+      const leaveBtn = document.getElementById('leave-room-btn');
+      if (leaveBtn) {
+        leaveBtn.addEventListener('click', () => {
+          stopTimers();
+          if (ClientState.activeRoomId) {
+            KanduhidiServer.leaveRoom(ClientState.activeRoomId, ClientState.player.id);
+          }
+          ClientState.activeRoomId = null;
+          navigate('home');
+        });
+      }
+
+      // Arena controls
+      const guessForm = document.getElementById('guess-form');
+      if (guessForm) {
+        const inputEl = document.getElementById('guess-input');
+        if (inputEl && !inputEl.disabled) inputEl.focus();
+        guessForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const val = inputEl.value;
+          if (!val.trim()) return;
+          const res = KanduhidiServer.submitGuess(ClientState.activeRoomId, ClientState.player.id, val);
+          if (!res.ok) {
+            SoundFX.wrong();
+            showToast(res.error, 'error');
+            inputEl.classList.add('animate-shake');
+            setTimeout(() => inputEl.classList.remove('animate-shake'), 380);
+            return;
+          }
+          if (res.outcome === 'too_high' || res.outcome === 'too_low') {
+            SoundFX.highLow(res.outcome === 'too_high');
+          } else if (res.outcome === 'incorrect') {
+            SoundFX.wrong();
+          }
+        });
+      }
+
+      const hintBtn = document.getElementById('reveal-hint-btn');
+      if (hintBtn) {
+        hintBtn.addEventListener('click', () => {
+          const res = KanduhidiServer.revealWordHint(ClientState.activeRoomId, ClientState.player.id);
+          if (!res.ok) showToast(res.error, 'warn');
+          else SoundFX.hint();
+        });
+      }
+
+      const nextRoundBtn = document.getElementById('next-round-btn');
+      if (nextRoundBtn) {
+        nextRoundBtn.addEventListener('click', () => {
+          if (autoNextTimeout) clearTimeout(autoNextTimeout);
+          const res = KanduhidiServer.startNextRound(ClientState.activeRoomId, ClientState.player.id);
+          if (!res.ok) showToast(res.error, 'error');
+          else {
+            lastRoundStatus = 'playing';
+            startArenaLoop();
+            SoundFX.join();
+          }
+        });
+      }
+
+      const hostEndBtn = document.getElementById('host-end-btn');
+      if (hostEndBtn) {
+        hostEndBtn.addEventListener('click', () => {
+          KanduhidiServer.forceEndGame(ClientState.activeRoomId, ClientState.player.id);
+        });
+      }
+
+      const arenaExitBtn = document.getElementById('arena-exit-btn');
+      if (arenaExitBtn) {
+        arenaExitBtn.addEventListener('click', () => {
+          stopTimers();
+          if (ClientState.activeRoomId) {
+            KanduhidiServer.leaveRoom(ClientState.activeRoomId, ClientState.player.id);
+          }
+          ClientState.activeRoomId = null;
+          navigate('home');
+        });
+      }
+
+      // Leaderboard tabs
+      document.querySelectorAll('[data-lb-tab]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          SoundFX.click();
+          ClientState.leaderboardTab = btn.getAttribute('data-lb-tab');
+          render();
+        });
+      });
+    }
+
+    function openEditRulesModal() {
+      const room = KanduhidiServer.getRoom(ClientState.activeRoomId);
+      if (!room) return;
+      const s = room.settings;
+      openModal(`
+        <h3 class="text-lg font-extrabold mb-4">Edit Room Rules (${escapeHtml(room.id)})</h3>
+        <form id="edit-rules-form" class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Category</label>
+              <select name="category" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+                <option value="number" ${s.category === 'number' ? 'selected' : ''}>Number</option>
+                <option value="word" ${s.category === 'word' ? 'selected' : ''}>Word</option>
+                <option value="both" ${s.category === 'both' ? 'selected' : ''}>Both</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Difficulty</label>
+              <select name="difficulty" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+                <option value="easy" ${s.difficulty === 'easy' ? 'selected' : ''}>Easy</option>
+                <option value="medium" ${s.difficulty === 'medium' ? 'selected' : ''}>Medium</option>
+                <option value="hard" ${s.difficulty === 'hard' ? 'selected' : ''}>Hard</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Min Number</label>
+              <input type="number" name="minNum" value="${s.minNum}" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Max Number</label>
+              <input type="number" name="maxNum" value="${s.maxNum}" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Rounds</label>
+              <input type="number" name="rounds" min="1" max="10" value="${s.rounds}" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Time Limit (s)</label>
+              <input type="number" name="timeLimit" min="20" max="180" value="${s.timeLimit}" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Attempt Limit</label>
+              <input type="number" name="attemptLimit" min="0" max="20" value="${s.attemptLimit}" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Base Points</label>
+              <input type="number" name="basePoints" min="10" value="${s.scoring.basePoints}" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm" />
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" id="modal-cancel-btn" class="btn-secondary px-4 py-2 rounded-xl text-xs font-bold">Cancel</button>
+            <button type="submit" class="btn-primary px-5 py-2 rounded-xl text-xs font-bold text-white">Save Settings</button>
+          </div>
+        </form>
+      `);
+      document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+      document.getElementById('edit-rules-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const res = KanduhidiServer.updateSettings(room.id, ClientState.player.id, {
+          category: fd.get('category'),
+          difficulty: fd.get('difficulty'),
+          minNum: Number(fd.get('minNum')),
+          maxNum: Number(fd.get('maxNum')),
+          rounds: Number(fd.get('rounds')),
+          timeLimit: Number(fd.get('timeLimit')),
+          attemptLimit: Number(fd.get('attemptLimit')),
+          scoring: { basePoints: Number(fd.get('basePoints')) }
+        });
+        if (!res.ok) showToast(res.error, 'error');
+        else {
+          closeModal();
+          showToast('Room settings updated!', 'success');
+        }
+      });
+    }
+
+    function openProfileModal() {
+      openModal(`
+        <h3 class="text-lg font-extrabold mb-3">Player Profile</h3>
+        <form id="profile-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Display Name</label>
+            <input type="text" name="name" value="${escapeHtml(ClientState.player.name)}" required maxlength="20" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-sm font-semibold" />
+          </div>
+          <div class="flex justify-end gap-2">
+            <button type="button" id="modal-cancel-btn" class="btn-secondary px-4 py-2 rounded-xl text-xs font-bold">Cancel</button>
+            <button type="submit" class="btn-primary px-5 py-2 rounded-xl text-xs font-bold text-white">Save Name</button>
+          </div>
+        </form>
+      `);
+      document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+      document.getElementById('profile-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        ClientState.setPlayerName(new FormData(e.target).get('name'));
+        closeModal();
+        showToast('Display name updated!', 'success');
+        render();
+      });
+    }
+
+    function updateSoundIcon() {
+      const btn = document.getElementById('sound-toggle-btn');
+      if (!btn) return;
+      btn.innerHTML = `<i data-lucide="${SoundFX.isEnabled() ? 'volume-2' : 'volume-x'}" class="w-4 h-4"></i>`;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    /* =========================================================================
+       7. INITIALIZATION
+       ========================================================================= */
+    window.addEventListener('load', () => {
+      document.getElementById('header-player-name').textContent = ClientState.player.name;
+
+      document.getElementById('nav-brand-btn').addEventListener('click', () => navigate('home'));
+      document.querySelectorAll('#desktop-nav [data-nav], #mobile-nav [data-nav]').forEach((btn) => {
+        btn.addEventListener('click', () => navigate(btn.getAttribute('data-nav')));
+      });
+
+      document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+        document.getElementById('mobile-nav').classList.toggle('hidden');
+      });
+
+      document.getElementById('sound-toggle-btn').addEventListener('click', () => {
+        const on = SoundFX.toggle();
+        updateSoundIcon();
+        showToast(on ? 'Sound effects ON' : 'Sound effects OFF', 'info');
+      });
+
+      document.getElementById('profile-btn').addEventListener('click', openProfileModal);
+      document.getElementById('modal-backdrop').addEventListener('click', (e) => {
+        if (e.target.id === 'modal-backdrop') closeModal();
+      });
+
+      KanduhidiServer.subscribe(() => {
+        if (ClientState.view === 'lobby' || ClientState.view === 'arena' || ClientState.view === 'join-room') {
+          const activeEl = document.activeElement;
+          const keepFocus = activeEl && activeEl.id === 'guess-input';
+          const draftVal = keepFocus ? activeEl.value : '';
+          render();
+          if (keepFocus) {
+            const newInput = document.getElementById('guess-input');
+            if (newInput && !newInput.disabled) {
+              newInput.value = draftVal;
+              newInput.focus();
+            }
+          }
+        }
+      });
+
+      render();
+    });
+  </script>
+</body>
+</html>
